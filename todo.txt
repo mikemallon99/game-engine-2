@@ -1,0 +1,60 @@
+todo:
+- FPS movement DONE
+- collisions (AABB) DONE
+- jumping DONE
+- up/down movement DONE
+- gui elements
+- level editor
+    - add in cubes
+    - resize cubes
+    - modal that can be dragged around
+    - add in individual faces
+- sounds
+- models that arent cubes
+- collisions (SAT)
+    - rotated cubes or nonstandard geometry
+- fps movement sway
+- flashlight decays with distance
+- skybox
+
+
+sequence:
+1. gui elements
+    a. 2d stuff at all
+    b. text
+    c. minimal debug menu: boxes with text
+    d. select from 3 textures with debug menu
+2. add in custom geometry in code
+2. add in geometry with gui (temp)
+3. save geometry to file and reload
+4. drag geometry to different points on grid using gimbal
+5. resize geometry using gimbal
+6. change texture of geometry
+
+problem: need to get text working
+
+custom geometry:
+- place a face somewhere
+- move face around
+- move vertices around 
+- add in collisions
+- custom textures
+- move things around in the engine
+
+hit right to select, then do up/down
+face_edit
+- edit_verts
+- translate
+- scale
+- rotate
+
+- vertex: 1 +/-
+increment/decrement by 0.1
+- x:
+- y:
+- z:
+
+- scale: 
+- x:
+- y:
+- z:

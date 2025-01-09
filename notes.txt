@@ -1,0 +1,51 @@
+my problem:
+- right now im not really "playing". I need to figure out how to get myself to a place where I can start playing around with game dev.
+- to me, playing means to have a loop of coming up with ideas and then trying them out.
+- to get to this state, i need to load in the fundamentals of gamedev and the libraries into my brain so i can start doing the actual play stuff.
+- how can you make reading a tutorial into something more fun and playful?
+    - go through it with a buddy
+    - watch a stream or listen to music while doing it
+    - speedrun the docs
+    
+
+speedrunning the manual made it much more enjoyable
+- recipe should be to speedrun through the shit and then solve the problems at the end to make sure you understand the abstractions
+listening to stream in the background made it a bit more difficult to concentrate but also made the shit more tolerable
+had to get through the shit otherwise i would have no knowledge to play with
+
+- trying to get through the exercises with the 30 minute timer is pretty fun
+any other ideas on how to make it more fun?
+- streaming
+- meta thinking on ideas on making it more fun 
+- start by scrolling to the bottom instead of reading (or just skim)
+- meditate before doing
+- neovim
+    - tried this but it felt too not fun to try to start configuring neovim. big learning curve
+- run into problems as soon as possible
+- drink coffee
+
+after programming in a while, i end up in a state where i want to do a bunch of stuff
+- i think its cause im in a state where i feel like im able to solve a bunch of problems 
+- burnout = the state where you dont feel like you can solve any problems
+
+i am worried that once i finish the openGL book, i will end up losing steam
+- it feels like in order to enter the problem solving state, i need to have the problems given to me rather than make them myself 
+- i will need to recognize once i run into this issue and think of ways to get around it
+
+my fun method though is to get into a state where im given a problem thats reasonably solvable as soon as possible
+- the problem should be something that im able to solve in less than 10 minutes of thinking/debugging
+
+what makes opengl problems more enjoyable to solve than a random math problem or something?
+- i could definitely solve some kind of matrix math problem, but im not sure if that would actually be fun for me. why do i have fun solving openGL stuff but not a random math problem 
+- openGL problems are fun cause its working towards a bigger picture problem that id like to solve?
+    - david deutsch "you know it when you see it"
+- chess problems were initially not that fun to solve, but somehow changed into being fun
+    - changed once i started letting go of my attachment to my ELO
+- factorio stops being fun at a certain point. the witness is fun most of the time but sometimes isnt fun. what is the secret here?
+
+optimal state is to be in a place where im calculating things to quickly solve problems, but also if i fail then im fine. if i fail and things go badly, then that is stressful
+
+what to do when getting bored of reading the OpenGL lessons?
+- need to start coming up with my own ideas on what to put in the game
+- would be fun if there was actual pressure on me while implementing stuff other than just a timer.
+- need a way to try really dumb ideas and solutions to things instead of having to think things through fully
