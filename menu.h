@@ -25,17 +25,53 @@
 glm::vec3 selColor = glm::vec3(0.9, 0.9f, 0.9f);
 glm::vec3 defaultColor = glm::vec3(0.3, 0.7f, 0.9f);
 
+enum MenuNodeType {
+    STRING,
+    VALUE,
+    EDITABLE_VALUE
+};
+
 class MenuNode {
 public:
     std::vector<MenuNode*> children;
     std::string label;
+    float* valuePtr;
+    float delta;
     int cursorPos;
+    MenuNodeType menuType;
     std::function<void()> select_func;
+    std::function<void()> plus_func;
+    std::function<void()> minus_func;
 
     MenuNode(std::string name) {
         label = name;
         cursorPos = 0;
+        menuType = STRING;
         select_func = nullptr;
+        valuePtr = nullptr;
+    }
+
+    MenuNode(std::string name, float* data_ptr) {
+        label = name;
+        cursorPos = 0;
+        menuType = VALUE;
+        select_func = nullptr;
+        valuePtr = data_ptr;
+    }
+
+    MenuNode(std::string name, float* data_ptr, float delta_in) {
+        label = name;
+        delta = delta_in;
+        cursorPos = 0;
+        menuType = EDITABLE_VALUE;
+        select_func = nullptr;
+        valuePtr = data_ptr;
+        plus_func = [this]() {
+            *(this->valuePtr) += this->delta;
+        };
+        minus_func = [this]() {
+            *(this->valuePtr) -= this->delta;
+        };
     }
 
     ~MenuNode() {
@@ -50,7 +86,19 @@ public:
     }
 
     virtual std::string GetValue() {
-        return label;
+        if (menuType == STRING) {
+            return label;
+        }
+        else if (menuType == VALUE) {
+            std::ostringstream oss;
+            oss << label << ": " << *valuePtr;
+            return oss.str();
+        }
+        else if (menuType == EDITABLE_VALUE) {
+            std::ostringstream oss;
+            oss << label << ": " << *valuePtr << " (+/-" << delta << ")";
+            return oss.str();
+        }
     }
 
     void Draw(Shader s) {
@@ -68,9 +116,25 @@ public:
         }
     }
 
-    virtual bool Select() {
+    bool Select() {
         if (select_func) {
             select_func();
+            return true;
+        }
+        return false;
+    }
+
+    bool Plus() {
+        if (plus_func) {
+            plus_func();
+            return true;
+        }
+        return false;
+    }
+
+    bool Minus() {
+        if (minus_func) {
+            minus_func();
             return true;
         }
         return false;
@@ -95,12 +159,14 @@ public:
     }
 };
 
+MenuNode* makeVec3Menu(std::string name, glm::vec3* in_data, float delta);
+
 
 class DataNode : MenuNode {
 public:
-    int* valuePtr;
+    float* valuePtr;
 
-    DataNode(std::string name, int* data_ptr) : MenuNode(name) {
+    DataNode(std::string name, float* data_ptr) : MenuNode(name) {
         valuePtr = data_ptr;
     }
 
@@ -119,9 +185,8 @@ public:
     MenuNode* textureMenu;
     MenuNode* editMenu;
 
-    int intValueX;
-    int intValueY;
-    int intValueZ;
+    glm::vec3 faceTrans;
+    glm::vec3 faceScale;
 
     std::vector<MenuNode*> menuNodeStack;
     KeyboardDebouncer kbd;
@@ -143,6 +208,9 @@ private:
 DebugMenu::DebugMenu() {
     kbdMgr.registerKeyboard(&kbd);
 
+    faceTrans = glm::vec3(3.0f, 0.0f, 3.0f);
+    faceScale = glm::vec3(1.0f, 1.0f, 1.0f);
+
     // Root menu
     root = new MenuNode("root");
     menuNodeStack.push_back(root);
@@ -152,40 +220,9 @@ DebugMenu::DebugMenu() {
     textureMenu->Add(new MenuNode("container"));
     textureMenu->Add(new MenuNode("bricks"));
 
-    editMenu = new MenuNode("edit face");
-    MenuNode* editMenuX = editMenu->Add(new MenuNode("X"));
-    MenuNode* editMenuY = editMenu->Add(new MenuNode("Y"));
-    MenuNode* editMenuZ = editMenu->Add(new MenuNode("Z"));
-
-    editMenuX->Add((MenuNode*)(new DataNode("X value", &intValueX)));
-    MenuNode* intIncX = editMenuX->Add(new MenuNode("+1"));
-    intIncX->select_func = [this]() {
-        (this->intValueX)++;
-    };
-    MenuNode* intDecX = editMenuX->Add(new MenuNode("-1"));
-    intDecX->select_func = [this]() {
-        (this->intValueX)--;
-    };
-
-    editMenuY->Add((MenuNode*)(new DataNode("Y value", &intValueY)));
-    MenuNode* intIncY = editMenuY->Add(new MenuNode("+1"));
-    intIncY->select_func = [this]() {
-        (this->intValueY)++;
-    };
-    MenuNode* intDecY = editMenuY->Add(new MenuNode("-1"));
-    intDecY->select_func = [this]() {
-        (this->intValueY)--;
-    };
-
-    editMenuZ->Add((MenuNode*)(new DataNode("Z value", &intValueZ)));
-    MenuNode* intIncZ = editMenuZ->Add(new MenuNode("+1"));
-    intIncZ->select_func = [this]() {
-        (this->intValueZ)++;
-    };
-    MenuNode* intDecZ = editMenuZ->Add(new MenuNode("-1"));
-    intDecZ->select_func = [this]() {
-        (this->intValueZ)--;
-    };
+    editMenu = new MenuNode("edit_face");
+    editMenu->Add(makeVec3Menu("translate", &faceTrans, 1.0f));
+    editMenu->Add(makeVec3Menu("scale", &faceScale, 0.1f));
 
     // Add "File" and "Edit" menus to the root
     root->Add(textureMenu);
@@ -231,6 +268,27 @@ void DebugMenu::ProcessKeyboard(GLFWwindow *window)
             menuNodeStack.push_back(menuNodeStack.back()->getSelectedChild());
         }
     }
+    
+    if (kbd.checkKey(GLFW_KEY_EQUAL)) {
+        // Select menu node
+        menuNodeStack.back()->getSelectedChild()->Plus();
+    }
+    
+    if (kbd.checkKey(GLFW_KEY_MINUS)) {
+        // Select menu node
+        menuNodeStack.back()->getSelectedChild()->Minus();
+    }
+}
+
+
+// RANDOM FUNCTIONS
+
+MenuNode* makeVec3Menu(std::string name, glm::vec3* in_data, float delta) {
+    MenuNode* newMenu = new MenuNode(name);
+    newMenu->Add(new MenuNode("X value", &(in_data->x), delta));
+    newMenu->Add(new MenuNode("Y value", &(in_data->y), delta));
+    newMenu->Add(new MenuNode("Z value", &(in_data->z), delta));
+    return newMenu;
 }
 
 

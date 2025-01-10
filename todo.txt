@@ -58,3 +58,29 @@ increment/decrement by 0.1
 - x:
 - y:
 - z:
+
+edit faces
+spawn new face
+
+FACE 1:
+- translate
+    - X: 1 (+/- 1)
+    - Y: -2 (+/- 1)
+    - Z: 0 (+/- 1)
+
+- edit vertices
+    - 0
+        - X: -0.5 (+/- 0.1)
+        - Y: -0.5 (+/- 0.1)
+        - Z: -0.5 (+/- 0.1)
+    - 1
+    - 2
+    - 3
+
+- scale
+    - X
+    - Y 
+    - Z
+- rotate
+
+FACE 2:

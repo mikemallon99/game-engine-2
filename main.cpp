@@ -190,7 +190,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "mike da game", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -513,7 +513,8 @@ int main() {
 
         // This should just draw a face
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3((float)debugMenu.intValueX, (float)debugMenu.intValueY, (float)debugMenu.intValueZ)); 
+        model = glm::translate(model, debugMenu.faceTrans); 
+        model = glm::scale(model, debugMenu.faceScale); 
         face.editVertex(0, glm::vec3(1.0f, 1.0f, -0.5f));
         // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         lightingShader.setMat4("model", model);
