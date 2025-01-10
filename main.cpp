@@ -473,25 +473,25 @@ int main() {
 
         // bind diffuse map
         glActiveTexture(GL_TEXTURE0);
-        if (debugMenu.textureMenuCursor == 0) {
+        if (debugMenu.textureMenu->cursorPos == 0) {
             glBindTexture(GL_TEXTURE_2D, tileTextureColor);
         }
-        else if (debugMenu.textureMenuCursor == 1) {
+        else if (debugMenu.textureMenu->cursorPos == 1) {
             glBindTexture(GL_TEXTURE_2D, containerTextureColor);
         }
-        else if (debugMenu.textureMenuCursor == 2) {
+        else if (debugMenu.textureMenu->cursorPos == 2) {
             glBindTexture(GL_TEXTURE_2D, stonesTextureColor);
         }
         glUniform1i(glGetUniformLocation(lightingShader.ID, "material.diffuse"), 0);
         // bind specular map
         glActiveTexture(GL_TEXTURE1);
-        if (debugMenu.textureMenuCursor == 0) {
+        if (debugMenu.textureMenu->cursorPos == 0) {
             glBindTexture(GL_TEXTURE_2D, tileTextureSpec);
         }
-        else if (debugMenu.textureMenuCursor == 1) {
+        else if (debugMenu.textureMenu->cursorPos == 1) {
             glBindTexture(GL_TEXTURE_2D, containerTextureSpec);
         }
-        else if (debugMenu.textureMenuCursor == 2) {
+        else if (debugMenu.textureMenu->cursorPos == 2) {
             glBindTexture(GL_TEXTURE_2D, stonesTextureSpec);
         }
         glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"), 1);
@@ -513,7 +513,7 @@ int main() {
 
         // This should just draw a face
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(3.0f, 0.0f, 3.0f)); 
+        model = glm::translate(model, glm::vec3((float)debugMenu.intValueX, (float)debugMenu.intValueY, (float)debugMenu.intValueZ)); 
         face.editVertex(0, glm::vec3(1.0f, 1.0f, -0.5f));
         // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         lightingShader.setMat4("model", model);

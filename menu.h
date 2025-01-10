@@ -1,6 +1,9 @@
 #ifndef MENU_H
 #define MENU_H
 
+#include <iostream>
+#include <functional>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -19,29 +22,117 @@
 // User has a current selection, and can use arrow keys to move the cursor around
 // when the item on the menu is highlighted, then the color of it will change
 
-enum PageName {
-    MAIN_PAGE,
-    TEXTURE_SELECT,
-    EDIT_FACE
+glm::vec3 selColor = glm::vec3(0.9, 0.9f, 0.9f);
+glm::vec3 defaultColor = glm::vec3(0.3, 0.7f, 0.9f);
+
+class MenuNode {
+public:
+    std::vector<MenuNode*> children;
+    std::string label;
+    int cursorPos;
+    std::function<void()> select_func;
+
+    MenuNode(std::string name) {
+        label = name;
+        cursorPos = 0;
+        select_func = nullptr;
+    }
+
+    ~MenuNode() {
+        for (int i=0; i < children.size(); i++) {
+            delete children[i];
+        }
+    }
+
+    MenuNode* Add(MenuNode* newNode) {
+        children.push_back(newNode);
+        return newNode;
+    }
+
+    virtual std::string GetValue() {
+        return label;
+    }
+
+    void Draw(Shader s) {
+        glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        s.use();
+        s.setMat4("projection", projection);
+
+        int i;
+        float y_pos;
+        glm::vec3 color;
+        for (int i=0; i < children.size(); i++) {
+            y_pos = 570.0f - i * 30.0f;
+            color = (i == cursorPos) ? selColor : defaultColor;
+            RenderText(s, children[i]->GetValue(), 20.0f, y_pos, 0.5f, color);
+        }
+    }
+
+    virtual bool Select() {
+        if (select_func) {
+            select_func();
+            return true;
+        }
+        return false;
+    }
+
+    MenuNode* getSelectedChild() {
+        return children[cursorPos];
+    }
+
+    bool selectedHasChildren() {
+        if (
+            // has children
+            cursorPos < children.size() && 
+            // children have children
+            children[cursorPos]->children.size() > 0
+        ) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 };
+
+
+class DataNode : MenuNode {
+public:
+    int* valuePtr;
+
+    DataNode(std::string name, int* data_ptr) : MenuNode(name) {
+        valuePtr = data_ptr;
+    }
+
+    std::string GetValue() override {
+        std::ostringstream oss;
+        oss << label << ": " << *valuePtr;
+        return oss.str();
+    }
+};
+
 
 class DebugMenu
 {
 public:
-    int currentPage = MAIN_PAGE;
+    MenuNode* root;
+    MenuNode* textureMenu;
+    MenuNode* editMenu;
 
-    int mainMenuCursor = 0;
+    int intValueX;
+    int intValueY;
+    int intValueZ;
 
-    int textureMenuCursor = 0;
-
+    std::vector<MenuNode*> menuNodeStack;
     KeyboardDebouncer kbd;
 
-    glm::vec3 selColor = glm::vec3(0.9, 0.9f, 0.9f);
-    glm::vec3 defaultColor = glm::vec3(0.3, 0.7f, 0.9f);
-
     DebugMenu();
+    ~DebugMenu();
     void Draw(Shader s);
     void ProcessKeyboard(GLFWwindow *window);
+
+private:
+    std::vector<MenuNode*> allMenuNodes;
 };
 
 // Debug menu holds values for all the stuff
@@ -51,119 +142,93 @@ public:
 
 DebugMenu::DebugMenu() {
     kbdMgr.registerKeyboard(&kbd);
+
+    // Root menu
+    root = new MenuNode("root");
+    menuNodeStack.push_back(root);
+
+    textureMenu = new MenuNode("texture");
+    textureMenu->Add(new MenuNode("bathroom_tiles"));
+    textureMenu->Add(new MenuNode("container"));
+    textureMenu->Add(new MenuNode("bricks"));
+
+    editMenu = new MenuNode("edit face");
+    MenuNode* editMenuX = editMenu->Add(new MenuNode("X"));
+    MenuNode* editMenuY = editMenu->Add(new MenuNode("Y"));
+    MenuNode* editMenuZ = editMenu->Add(new MenuNode("Z"));
+
+    editMenuX->Add((MenuNode*)(new DataNode("X value", &intValueX)));
+    MenuNode* intIncX = editMenuX->Add(new MenuNode("+1"));
+    intIncX->select_func = [this]() {
+        (this->intValueX)++;
+    };
+    MenuNode* intDecX = editMenuX->Add(new MenuNode("-1"));
+    intDecX->select_func = [this]() {
+        (this->intValueX)--;
+    };
+
+    editMenuY->Add((MenuNode*)(new DataNode("Y value", &intValueY)));
+    MenuNode* intIncY = editMenuY->Add(new MenuNode("+1"));
+    intIncY->select_func = [this]() {
+        (this->intValueY)++;
+    };
+    MenuNode* intDecY = editMenuY->Add(new MenuNode("-1"));
+    intDecY->select_func = [this]() {
+        (this->intValueY)--;
+    };
+
+    editMenuZ->Add((MenuNode*)(new DataNode("Z value", &intValueZ)));
+    MenuNode* intIncZ = editMenuZ->Add(new MenuNode("+1"));
+    intIncZ->select_func = [this]() {
+        (this->intValueZ)++;
+    };
+    MenuNode* intDecZ = editMenuZ->Add(new MenuNode("-1"));
+    intDecZ->select_func = [this]() {
+        (this->intValueZ)--;
+    };
+
+    // Add "File" and "Edit" menus to the root
+    root->Add(textureMenu);
+    root->Add(editMenu);
+}
+
+DebugMenu::~DebugMenu() {
+    delete root;
 }
 
 void DebugMenu::Draw(Shader s) {
-    glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
-    s.use();
-    s.setMat4("projection", projection);
-
-    int i;
-    float y_pos;
-    glm::vec3 color;
-    if (currentPage == MAIN_PAGE) {
-        i = 0;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == mainMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "texture_select", 20.0f, y_pos, 0.5f, color);
-
-        i = 1;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == mainMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "face_edit", 20.0f, y_pos, 0.5f, color);
-    }
-    else if (currentPage == TEXTURE_SELECT) {
-        i = 0;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == textureMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "bathroom_tile", 20.0f, y_pos, 0.5f, color);
-
-        i = 1;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == textureMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "container", 20.0f, y_pos, 0.5f, color);
-
-        i = 2;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == textureMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "bricks", 20.0f, y_pos, 0.5f, color);
-    }
-    else if (currentPage == EDIT_FACE) {
-        i = 0;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == textureMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "bathroom_tile", 20.0f, y_pos, 0.5f, color);
-
-        i = 1;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == textureMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "container", 20.0f, y_pos, 0.5f, color);
-
-        i = 2;
-        y_pos = 570.0f - i * 20.0f;
-        color = (i == textureMenuCursor) ? selColor : defaultColor;
-        RenderText(s, "bricks", 20.0f, y_pos, 0.5f, color);
-    }
-
-    // for (int i=0; i < menuItems.size(); i++) {
-    //     float y_pos = 570.0f - i * 20.0f;
-    //     glm::vec3 color = (i == itemSelected) ? selColor : defaultColor;
-    //     RenderText(s, menuItems[i], 20.0f, y_pos, 0.5f, color);
-    // }
+    menuNodeStack.back()->Draw(s);
 }
 
 void DebugMenu::ProcessKeyboard(GLFWwindow *window)
 {
     if (kbd.checkKey(GLFW_KEY_UP)) {
-        if (currentPage == MAIN_PAGE) {
-            if (mainMenuCursor > 0) {
-                mainMenuCursor--;
-            }
-        }
-        else if (currentPage == TEXTURE_SELECT) {
-            if (textureMenuCursor > 0) {
-                textureMenuCursor--;
-            }
-        }
-        else if (currentPage == EDIT_FACE) {
-            if (textureMenuCursor > 0) {
-                textureMenuCursor--;
-            }
+        // Go up on current menu node
+        if (menuNodeStack.back()->cursorPos > 0) {
+            (menuNodeStack.back()->cursorPos)--;
         }
     }
 
     if (kbd.checkKey(GLFW_KEY_DOWN)) {
-        if (currentPage == MAIN_PAGE) {
-            if (mainMenuCursor < 1) {
-                mainMenuCursor++;
-            }
-        }
-        else if (currentPage == TEXTURE_SELECT) {
-            if (textureMenuCursor < 2) {
-                textureMenuCursor++;
-            }
-        }
-        else if (currentPage == EDIT_FACE) {
-            if (textureMenuCursor < 2) {
-                textureMenuCursor++;
-            }
+        // Go down on current menu node
+        if (menuNodeStack.back()->cursorPos < menuNodeStack.back()->children.size() - 1) {
+            (menuNodeStack.back()->cursorPos)++;
         }
     }
     
     if (kbd.checkKey(GLFW_KEY_LEFT)) {
-        if (currentPage == TEXTURE_SELECT) {
-            currentPage = MAIN_PAGE;
+        // Pop menu node stack
+        if (menuNodeStack.size() > 1) {
+            menuNodeStack.pop_back();
         }
     }
     
     if (kbd.checkKey(GLFW_KEY_RIGHT)) {
-        if (currentPage == MAIN_PAGE) {
-            if (mainMenuCursor == 0) {
-                currentPage = TEXTURE_SELECT;
-            }
-            else if (mainMenuCursor == 1) {
-                currentPage = EDIT_FACE;
-            }
+        // Select menu node
+        if (
+            !menuNodeStack.back()->getSelectedChild()->Select() && menuNodeStack.back()->selectedHasChildren()
+        ) {
+            menuNodeStack.push_back(menuNodeStack.back()->getSelectedChild());
         }
     }
 }
