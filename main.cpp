@@ -20,6 +20,7 @@
 #include "menu.h"
 #include "face.h"
 #include "keyboard.h"
+#include "stage.h"
 
 
 // MOVE: used for text studd
@@ -32,6 +33,7 @@ glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
 Camera camera(cameraPos);
+Stage stage;
 DebugMenu debugMenu;
 KeyboardDebouncer kbd;
 
@@ -361,7 +363,8 @@ int main() {
 
     loadTextStuff();
 
-    Face face;
+    stage.init();
+    debugMenu.Setup(&stage);
 
     kbdMgr.registerKeyboard(&kbd);
 
@@ -513,12 +516,12 @@ int main() {
 
         // This should just draw a face
         model = glm::mat4(1.0f);
-        model = glm::translate(model, debugMenu.faceTrans); 
-        model = glm::scale(model, debugMenu.faceScale); 
-        face.editVertex(0, glm::vec3(1.0f, 1.0f, -0.5f));
+        model = glm::translate(model, stage.faceVector[0]->translate); 
+        model = glm::scale(model, stage.faceVector[0]->scale); 
+        stage.faceVector[0]->editVertex(0, glm::vec3(1.0f, 1.0f, -0.5f));
         // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         lightingShader.setMat4("model", model);
-        face.Draw();
+        stage.faceVector[0]->Draw();
 
         // also draw the lamp object(s)
         lightCubeShader.use();

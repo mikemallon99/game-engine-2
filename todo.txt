@@ -37,6 +37,7 @@ custom geometry:
 - place a face somewhere
 - move face around
 - move vertices around 
+- add in new faces
 - add in collisions
 - custom textures
 - move things around in the engine

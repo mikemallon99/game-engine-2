@@ -17,6 +17,7 @@
 
 #include "text.h"
 #include "keyboard.h"
+#include "stage.h"
 
 // Menu has a list of text items that have functions associated with them
 // User has a current selection, and can use arrow keys to move the cursor around
@@ -185,8 +186,7 @@ public:
     MenuNode* textureMenu;
     MenuNode* editMenu;
 
-    glm::vec3 faceTrans;
-    glm::vec3 faceScale;
+    Stage* stage;
 
     std::vector<MenuNode*> menuNodeStack;
     KeyboardDebouncer kbd;
@@ -195,6 +195,7 @@ public:
     ~DebugMenu();
     void Draw(Shader s);
     void ProcessKeyboard(GLFWwindow *window);
+    void Setup(Stage* stage_in);
 
 private:
     std::vector<MenuNode*> allMenuNodes;
@@ -206,10 +207,15 @@ private:
 //      what to do if i want to do stuff like have incrementing, sublists, etc?
 
 DebugMenu::DebugMenu() {
+}
+
+void DebugMenu::Setup(Stage* stage_in) {
+    stage = stage_in;
+
     kbdMgr.registerKeyboard(&kbd);
 
-    faceTrans = glm::vec3(3.0f, 0.0f, 3.0f);
-    faceScale = glm::vec3(1.0f, 1.0f, 1.0f);
+    stage->faceVector[0]->translate = glm::vec3(3.0f, 0.0f, 3.0f);
+    stage->faceVector[0]->scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     // Root menu
     root = new MenuNode("root");
@@ -221,8 +227,8 @@ DebugMenu::DebugMenu() {
     textureMenu->Add(new MenuNode("bricks"));
 
     editMenu = new MenuNode("edit_face");
-    editMenu->Add(makeVec3Menu("translate", &faceTrans, 1.0f));
-    editMenu->Add(makeVec3Menu("scale", &faceScale, 0.1f));
+    editMenu->Add(makeVec3Menu("translate", &(stage->faceVector[0]->translate), 1.0f));
+    editMenu->Add(makeVec3Menu("scale", &(stage->faceVector[0]->scale), 0.1f));
 
     // Add "File" and "Edit" menus to the root
     root->Add(textureMenu);

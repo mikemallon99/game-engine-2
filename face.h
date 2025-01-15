@@ -15,6 +15,9 @@ public:
     int* indices;
     unsigned int VBO, VAO, EBO;
 
+    glm::vec3 translate;
+    glm::vec3 scale;
+
     Face();
     ~Face();
 
@@ -58,6 +61,9 @@ Face::Face() {
     glEnableVertexAttribArray(2);  
 
     glBindVertexArray(0);
+
+    translate = glm::vec3(0.0f, 0.0f, 0.0f);
+    scale = glm::vec3(1.0f, 1.0f, 1.0f);
 }
 
 Face::~Face() {
