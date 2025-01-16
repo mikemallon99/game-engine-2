@@ -515,13 +515,13 @@ int main() {
         }
 
         // This should just draw a face
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, stage.faceVector[0]->translate); 
-        model = glm::scale(model, stage.faceVector[0]->scale); 
-        stage.faceVector[0]->editVertex(0, glm::vec3(1.0f, 1.0f, -0.5f));
-        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        lightingShader.setMat4("model", model);
-        stage.faceVector[0]->Draw();
+        for (int i=0; i < stage.faceVector.size(); i++) {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, stage.faceVector[i]->translate); 
+            model = glm::scale(model, stage.faceVector[i]->scale); 
+            lightingShader.setMat4("model", model);
+            stage.faceVector[i]->Draw();
+        }
 
         // also draw the lamp object(s)
         lightCubeShader.use();

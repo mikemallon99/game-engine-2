@@ -26,10 +26,35 @@
 glm::vec3 selColor = glm::vec3(0.9, 0.9f, 0.9f);
 glm::vec3 defaultColor = glm::vec3(0.3, 0.7f, 0.9f);
 
+// class Vec3VectorView {
+// public:
+//     std::vector<glm::vec3>* vectorPtr;
+//     std::vector<MenuNode*>* menuStackPtr;
+//     int cursorPos;
+
+//     // Variable for Vec3 type
+//     // When selected a value, spawn a new view with the vec3 value and push it to the stack
+
+//     // Pointer to vector
+
+//     // How to get select to push something to the stack?
+//     void Select() {
+//         Vec3View* newVec3View = new Vec3View(&((*vectorPtr)[cursorPos]));
+//         menuStackPtr->push_back();
+//     }
+// };
+
+// class Vec3View {
+// public:
+//     // Pointer to Vec3 value
+// };
+
 enum MenuNodeType {
     STRING,
     VALUE,
-    EDITABLE_VALUE
+    EDITABLE_VALUE,
+    FACE_VECTOR_VIEW,
+    FACE_VIEW
 };
 
 class MenuNode {
@@ -37,12 +62,17 @@ public:
     std::vector<MenuNode*> children;
     std::string label;
     float* valuePtr;
+    std::vector<Face*>* faceVectorPtr;
+    Face* facePtr;
     float delta;
     int cursorPos;
     MenuNodeType menuType;
-    std::function<void()> select_func;
+    std::function<void(MenuNode*)> select_func;
     std::function<void()> plus_func;
     std::function<void()> minus_func;
+
+    MenuNode* makeVec3Menu(std::string name, glm::vec3* in_data, float delta);
+
 
     MenuNode(std::string name) {
         label = name;
@@ -75,6 +105,32 @@ public:
         };
     }
 
+    // For making a FaceVectorView
+    MenuNode(std::string name, std::vector<Face*>* faceVectorPtr_in, std::function<void(MenuNode*)> select_func_in) {
+        label = name;
+        cursorPos = 0;
+        menuType = FACE_VECTOR_VIEW;
+        select_func = select_func_in;
+        faceVectorPtr = faceVectorPtr_in;
+        plus_func = [this]() {
+            (this->faceVectorPtr)->push_back(new Face());
+        };
+        // minus_func = [this]() {
+        //     (this->faceVectorPtr)->pop(new Face());
+        // };
+    }
+
+    // For making a FaceView
+    MenuNode(std::string name, Face* facePtr_in) {
+        label = name;
+        cursorPos = 0;
+        menuType = FACE_VIEW;
+        select_func = nullptr;
+        facePtr = facePtr_in;
+        this->Add(makeVec3Menu("translate", &(facePtr->translate), 1.0f));
+        this->Add(makeVec3Menu("scale", &(facePtr->scale), 0.1f));
+    }
+
     ~MenuNode() {
         for (int i=0; i < children.size(); i++) {
             delete children[i];
@@ -87,7 +143,7 @@ public:
     }
 
     virtual std::string GetValue() {
-        if (menuType == STRING) {
+        if (menuType == STRING || menuType == FACE_VECTOR_VIEW) {
             return label;
         }
         else if (menuType == VALUE) {
@@ -110,19 +166,34 @@ public:
         int i;
         float y_pos;
         glm::vec3 color;
-        for (int i=0; i < children.size(); i++) {
-            y_pos = 570.0f - i * 30.0f;
-            color = (i == cursorPos) ? selColor : defaultColor;
-            RenderText(s, children[i]->GetValue(), 20.0f, y_pos, 0.5f, color);
-        }
+        if (menuType == FACE_VECTOR_VIEW) {
+            // Do this differently since the children dont exist
+            for (int i=0; i < faceVectorPtr->size(); i++) {
+                y_pos = 570.0f - i * 30.0f;
+                color = (i == cursorPos) ? selColor : defaultColor;
+                std::ostringstream oss;
+                oss << "face" << i;
+                RenderText(s, oss.str(), 20.0f, y_pos, 0.5f, color);
+            }
+        } else {
+            for (int i=0; i < children.size(); i++) {
+                y_pos = 570.0f - i * 30.0f;
+                color = (i == cursorPos) ? selColor : defaultColor;
+                RenderText(s, children[i]->GetValue(), 20.0f, y_pos, 0.5f, color);
+            }
+        } 
     }
 
     bool Select() {
-        if (select_func) {
-            select_func();
+        if (menuType == FACE_VECTOR_VIEW) {
+            std::ostringstream oss;
+            oss << "face" << cursorPos;
+            select_func(new MenuNode(oss.str(), faceVectorPtr->at(cursorPos)));
             return true;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
     bool Plus() {
@@ -160,24 +231,6 @@ public:
     }
 };
 
-MenuNode* makeVec3Menu(std::string name, glm::vec3* in_data, float delta);
-
-
-class DataNode : MenuNode {
-public:
-    float* valuePtr;
-
-    DataNode(std::string name, float* data_ptr) : MenuNode(name) {
-        valuePtr = data_ptr;
-    }
-
-    std::string GetValue() override {
-        std::ostringstream oss;
-        oss << label << ": " << *valuePtr;
-        return oss.str();
-    }
-};
-
 
 class DebugMenu
 {
@@ -191,7 +244,7 @@ public:
     std::vector<MenuNode*> menuNodeStack;
     KeyboardDebouncer kbd;
 
-    DebugMenu();
+    // DebugMenu();
     ~DebugMenu();
     void Draw(Shader s);
     void ProcessKeyboard(GLFWwindow *window);
@@ -205,9 +258,6 @@ private:
 // how to handle submenus?
 //      menu page, menu page filled with entries, entries can do a function or change active menu page, also push to a stack
 //      what to do if i want to do stuff like have incrementing, sublists, etc?
-
-DebugMenu::DebugMenu() {
-}
 
 void DebugMenu::Setup(Stage* stage_in) {
     stage = stage_in;
@@ -226,9 +276,14 @@ void DebugMenu::Setup(Stage* stage_in) {
     textureMenu->Add(new MenuNode("container"));
     textureMenu->Add(new MenuNode("bricks"));
 
-    editMenu = new MenuNode("edit_face");
-    editMenu->Add(makeVec3Menu("translate", &(stage->faceVector[0]->translate), 1.0f));
-    editMenu->Add(makeVec3Menu("scale", &(stage->faceVector[0]->scale), 0.1f));
+    // editMenu = new MenuNode("edit_face");
+    // editMenu->Add(makeVec3Menu("translate", &(stage->faceVector[0]->translate), 1.0f));
+    // editMenu->Add(makeVec3Menu("scale", &(stage->faceVector[0]->scale), 0.1f));
+
+    std::function<void(MenuNode*)> sel_func = [this](MenuNode* newNode) {
+        (this->menuNodeStack).push_back(newNode);
+    };
+    editMenu = new MenuNode("edit_faces", &(stage->faceVector), sel_func);
 
     // Add "File" and "Edit" menus to the root
     root->Add(textureMenu);
@@ -269,15 +324,24 @@ void DebugMenu::ProcessKeyboard(GLFWwindow *window)
     if (kbd.checkKey(GLFW_KEY_RIGHT)) {
         // Select menu node
         if (
-            !menuNodeStack.back()->getSelectedChild()->Select() && menuNodeStack.back()->selectedHasChildren()
+            menuNodeStack.back()->menuType == FACE_VECTOR_VIEW
         ) {
+            menuNodeStack.back()->Select();
+        }
+        else {
             menuNodeStack.push_back(menuNodeStack.back()->getSelectedChild());
         }
     }
     
     if (kbd.checkKey(GLFW_KEY_EQUAL)) {
         // Select menu node
-        menuNodeStack.back()->getSelectedChild()->Plus();
+        if (
+            menuNodeStack.back()->menuType == FACE_VECTOR_VIEW
+        ) {
+            menuNodeStack.back()->Plus();
+        } else {
+            menuNodeStack.back()->getSelectedChild()->Plus();
+        }
     }
     
     if (kbd.checkKey(GLFW_KEY_MINUS)) {
@@ -289,7 +353,7 @@ void DebugMenu::ProcessKeyboard(GLFWwindow *window)
 
 // RANDOM FUNCTIONS
 
-MenuNode* makeVec3Menu(std::string name, glm::vec3* in_data, float delta) {
+MenuNode* MenuNode::makeVec3Menu(std::string name, glm::vec3* in_data, float delta) {
     MenuNode* newMenu = new MenuNode(name);
     newMenu->Add(new MenuNode("X value", &(in_data->x), delta));
     newMenu->Add(new MenuNode("Y value", &(in_data->y), delta));
