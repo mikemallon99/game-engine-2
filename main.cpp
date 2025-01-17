@@ -347,6 +347,7 @@ int main() {
 
     // Enable z buffer
     glEnable(GL_DEPTH_TEST);  
+    glDepthFunc(GL_LESS);  
 
     glm::vec3 cubePos( 0.0f,  0.0f,  0.0f);
 
@@ -360,6 +361,7 @@ int main() {
     };  
 
     // Model backpack("models/backpack/backpack.obj");
+    Model sword("models/sword.obj");
 
     loadTextStuff();
 
@@ -467,12 +469,21 @@ int main() {
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
 
+        glm::mat4 model;
+
         // render the loaded model
-        // glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::mat4(1.0f);
         // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        // ourShader.setMat4("model", model);
-        // backpack.Draw(ourShader);
+        // lightingShader.setMat4("model", model);
+        // backpack.Draw(lightingShader);
+
+        // render the sword
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(6.0f, 1.0f, 6.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        lightingShader.setMat4("model", model);
+        sword.Draw(lightingShader);
 
         // bind diffuse map
         glActiveTexture(GL_TEXTURE0);
@@ -499,7 +510,6 @@ int main() {
         }
         glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"), 1);
 
-        glm::mat4 model;
         glBindVertexArray(VAO); 
         for (int i=0; i < cubeMap.size(); i++) {
             model = glm::mat4(1.0f);

@@ -85,3 +85,15 @@ FACE 1:
 - rotate
 
 FACE 2:
+
+
+TASK: ADD IN A CUSTOM MAP
+- would be cool to have a map on a street
+- add in textures like grass, sidewalk, fences, etc
+
+task breakdown:
+- to make the map i need to use blender
+    - need to use blender -> opengl export pipeline
+- start by making one model and load it in the game
+- make a custom map, set collisions as the floor plane
+- write collision system for complex meshes, not AABB
