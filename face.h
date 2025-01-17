@@ -23,6 +23,7 @@ public:
 
     void Draw();
     void editVertex(int i, glm::vec3 newVert);
+    glm::vec3 getVertex(int i);
 };
 
 Face::Face() {
@@ -90,6 +91,14 @@ void Face::editVertex(int i, glm::vec3 newVert) {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, 6 * 8 * sizeof(float), vertices, GL_STATIC_DRAW);
     glBindVertexArray(0);
+}
+
+glm::vec3 Face::getVertex(int i) {
+    glm::vec3 newVert;
+    newVert.x = vertices[i * 8 + 0];
+    newVert.y = vertices[i * 8 + 1];
+    newVert.z = vertices[i * 8 + 2];
+    return newVert;
 }
 
 #endif 

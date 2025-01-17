@@ -54,7 +54,7 @@ enum MenuNodeType {
     VALUE,
     EDITABLE_VALUE,
     FACE_VECTOR_VIEW,
-    FACE_VIEW
+    FACE_VIEW,
 };
 
 class MenuNode {
@@ -72,6 +72,7 @@ public:
     std::function<void()> minus_func;
 
     MenuNode* makeVec3Menu(std::string name, glm::vec3* in_data, float delta);
+    MenuNode* makeVertexVec3Menu(std::string name, Face* facePtr_in, int idx, float delta);
 
 
     MenuNode(std::string name) {
@@ -129,6 +130,13 @@ public:
         facePtr = facePtr_in;
         this->Add(makeVec3Menu("translate", &(facePtr->translate), 1.0f));
         this->Add(makeVec3Menu("scale", &(facePtr->scale), 0.1f));
+
+        // Need way to update VBO once we change a vertex
+        // Get vertex from face, change, writeback
+        this->Add(makeVertexVec3Menu("v1", facePtr, 0, 0.1f));
+        this->Add(makeVertexVec3Menu("v2", facePtr, 1, 0.1f));
+        this->Add(makeVertexVec3Menu("v3", facePtr, 2, 0.1f));
+        this->Add(makeVertexVec3Menu("v4", facePtr, 3, 0.1f));
     }
 
     ~MenuNode() {
@@ -358,6 +366,51 @@ MenuNode* MenuNode::makeVec3Menu(std::string name, glm::vec3* in_data, float del
     newMenu->Add(new MenuNode("X value", &(in_data->x), delta));
     newMenu->Add(new MenuNode("Y value", &(in_data->y), delta));
     newMenu->Add(new MenuNode("Z value", &(in_data->z), delta));
+    return newMenu;
+}
+
+MenuNode* MenuNode::makeVertexVec3Menu(std::string name, Face* facePtr_in, int idx, float delta) {
+    MenuNode* newMenu = new MenuNode(name);
+
+    MenuNode* xMenu = new MenuNode("X value", &(facePtr_in->vertices[8*idx + 0]), delta);
+    newMenu->Add(xMenu);
+    xMenu->plus_func = [facePtr_in, idx, delta]() {
+        glm::vec3 vtx = facePtr_in->getVertex(idx);
+        vtx.x += delta;
+        facePtr_in->editVertex(idx, vtx);
+    };
+    xMenu->minus_func = [facePtr_in, idx, delta]() {
+        glm::vec3 vtx = facePtr_in->getVertex(idx);
+        vtx.x -= delta;
+        facePtr_in->editVertex(idx, vtx);
+    };
+
+    MenuNode* yMenu = new MenuNode("Y value", &(facePtr_in->vertices[8*idx + 1]), delta);
+    newMenu->Add(yMenu);
+    yMenu->plus_func = [facePtr_in, idx, delta]() {
+        glm::vec3 vtx = facePtr_in->getVertex(idx);
+        vtx.y += delta;
+        facePtr_in->editVertex(idx, vtx);
+    };
+    yMenu->minus_func = [facePtr_in, idx, delta]() {
+        glm::vec3 vtx = facePtr_in->getVertex(idx);
+        vtx.y -= delta;
+        facePtr_in->editVertex(idx, vtx);
+    };
+
+    MenuNode* zMenu = new MenuNode("Z value", &(facePtr_in->vertices[8*idx + 2]), delta);
+    newMenu->Add(zMenu);
+    zMenu->plus_func = [facePtr_in, idx, delta]() {
+        glm::vec3 vtx = facePtr_in->getVertex(idx);
+        vtx.z += delta;
+        facePtr_in->editVertex(idx, vtx);
+    };
+    zMenu->minus_func = [facePtr_in, idx, delta]() {
+        glm::vec3 vtx = facePtr_in->getVertex(idx);
+        vtx.z -= delta;
+        facePtr_in->editVertex(idx, vtx);
+    };
+
     return newMenu;
 }
 
