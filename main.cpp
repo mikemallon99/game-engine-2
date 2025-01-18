@@ -362,6 +362,7 @@ int main() {
 
     // Model backpack("models/backpack/backpack.obj");
     Model sword("models/sword.obj");
+    Model well("models/well.obj");
 
     loadTextStuff();
 
@@ -484,6 +485,13 @@ int main() {
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         lightingShader.setMat4("model", model);
         sword.Draw(lightingShader);
+
+        // render the well
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(6.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
+        lightingShader.setMat4("model", model);
+        well.Draw(lightingShader);
 
         // bind diffuse map
         glActiveTexture(GL_TEXTURE0);
