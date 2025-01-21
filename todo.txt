@@ -97,3 +97,9 @@ task breakdown:
 - start by making one model and load it in the game
 - make a custom map, set collisions as the floor plane
 - write collision system for complex meshes, not AABB
+
+make a map in blender
+load map in the game in place of the cube
+have the collisions be a plane 
+texture the map, load in textures 
+rewrite collisions to work with the map

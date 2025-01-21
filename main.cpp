@@ -21,6 +21,7 @@
 #include "face.h"
 #include "keyboard.h"
 #include "stage.h"
+#include "collisions.h"
 
 
 // MOVE: used for text studd
@@ -297,6 +298,8 @@ int main() {
     Shader lightingShader("shader.vs", "shader.fs");
     Shader lightCubeShader("shader.vs", "light.fs");
     Shader textShader("text_shader.vs", "text_shader.fs");
+
+    Shader wireframeShader("wireframe.vs", "wireframe.gs", "wireframe.fs");
     // Shader ourShader("model_loading.vs", "model_loading.fs");
 
     unsigned int VAO;
@@ -363,6 +366,9 @@ int main() {
     // Model backpack("models/backpack/backpack.obj");
     Model sword("models/sword.obj");
     Model well("models/well.obj");
+    Model room("models/room.obj");
+
+    CollisionObject roomCol(&room);
 
     loadTextStuff();
 
@@ -493,7 +499,21 @@ int main() {
         lightingShader.setMat4("model", model);
         well.Draw(lightingShader);
 
+        // room stuff
+        roomCol.checkCollisions(camera.Position);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        lightingShader.setMat4("model", model);
+        room.Draw(lightingShader);
+        wireframeShader.use();
+        wireframeShader.setMat4("model", model);
+        wireframeShader.setMat4("projection", projection);
+        wireframeShader.setMat4("view", view);
+        room.Draw(wireframeShader);
+
         // bind diffuse map
+        lightingShader.use();
         glActiveTexture(GL_TEXTURE0);
         if (debugMenu.textureMenu->cursorPos == 0) {
             glBindTexture(GL_TEXTURE_2D, tileTextureColor);

@@ -43,6 +43,7 @@ public:
     vector<Vertex>       vertices;
     vector<unsigned int> indices;
     vector<Texture>      textures;
+    glm::vec3 addColor;
     unsigned int VAO;
 
     // constructor
@@ -51,6 +52,7 @@ public:
         this->vertices = vertices;
         this->indices = indices;
         this->textures = textures;
+        this->addColor = glm::vec3(0.0f, 0.0f, 0.0f);
 
         // now that we have all the required data, set the vertex buffers and its attribute pointers.
         setupMesh();
@@ -85,6 +87,7 @@ public:
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
         }
         
+        shader.setVec3("addColor", addColor);
         // draw mesh
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);

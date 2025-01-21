@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
+    <ClInclude Include="collisions.h" />
     <ClInclude Include="face.h" />
     <ClInclude Include="keyboard.h" />
     <ClInclude Include="menu.h" />
