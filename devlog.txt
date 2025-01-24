@@ -1,0 +1,21 @@
+1/22/25
+- started work on collision response
+- distinction between floors and walls
+- created equation for where to place sphere after floor collision
+- floor movement snapping idea
+
+1/23/25
+- got floor collisions working
+- fixed normals + extra face on room model 
+- solved first equation for finding tangent point onto wall planes
+(for tomorrow)
+- test equation for tangent point 
+- make collision function use initialPoint and movVector
+- solve equation for projecting movement vector along plane
+
+1/23/25
+- got first equation working inside the game
+- made collision function use initialPoint and movVector
+(for tomorrow)
+- solve equation for projecting movement vector along plane
+- start putting it into the game

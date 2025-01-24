@@ -43,5 +43,9 @@ void GenerateLine(int index)
 
 void main()
 {
-    GenerateTriangle();
+    // GenerateTriangle();
+
+    GenerateLine(0);
+    GenerateLine(1);
+    GenerateLine(2);
 }  

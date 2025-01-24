@@ -29,8 +29,8 @@ AABB player = AABB{-0.2f, 0.2f, -0.5f, 0.5f, -0.2f, 0.2f};
 
 float yVelocity = 0.0f;
 
-glm::vec3 calcGravity(glm::vec3 playerPos) {
-    glm::vec3 newPos = playerPos;
+glm::vec3 calcGravity() {
+    glm::vec3 newPos = glm::vec3(0.0f, 0.0f, 0.0f);
     yVelocity -= 0.0025f;
     newPos.y += yVelocity;
     return newPos;

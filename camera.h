@@ -27,6 +27,7 @@ class Camera
 public:
     // camera Attributes
     glm::vec3 Position;
+    glm::vec3 movVector;
     glm::vec3 Front;
     glm::vec3 Up;
     glm::vec3 Right;
@@ -52,6 +53,7 @@ public:
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = glm::vec3(posX, posY, posZ);
+        movVector = glm::vec3(0.0f, 0.0f, 0.0f);
         WorldUp = glm::vec3(upX, upY, upZ);
         Yaw = yaw;
         Pitch = pitch;
@@ -71,7 +73,7 @@ public:
         direction = glm::normalize(direction);
         glm::vec3 frontFlat = glm::normalize(glm::vec3(Front.x, 0.0f, Front.z)) * direction.z;
         glm::vec3 rightFlat = glm::normalize(glm::vec3(Right.x, 0.0f, Right.z)) * direction.x;
-        Position += (frontFlat + rightFlat) * velocity;
+        movVector = (frontFlat + rightFlat) * velocity;
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.

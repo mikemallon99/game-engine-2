@@ -22,7 +22,7 @@ public:
     Model* model;
 
     CollisionObject(Model* m);
-    glm::vec3 checkCollisions(glm::vec3 playerPos);
+    glm::vec3 checkCollisions(glm::vec3 playerPos, glm::vec3 movVec);
 };
 
 CollisionObject::CollisionObject(Model* m) {
@@ -101,9 +101,12 @@ static bool pointInside(const glm::vec2 poly[], int pcount, const glm::vec2 &v)
   return true;
 }
 
-glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos) {
-    glm::vec3 shiftDelta;
+glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos, glm::vec3 movVec) {
+    glm::vec3 shiftDelta = glm::vec3(0.0f, 0.0f, 0.0f);
     int numCollisions = 0;
+
+    glm::vec3 nextPos = playerPos + movVec;
+    // glm::vec3 nextPos = playerPos;
 
     // Iterate through each mesh in the model
     for (int i=0; i < model->meshes.size(); i++) {
@@ -125,7 +128,7 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos) {
             glm::vec3 normal = glm::normalize(mesh.vertices[mesh.indices[3*t + 0]].Normal);
 
             float d = glm::dot(-((v0 + v1 + v2) / 3.0f), normal);
-            float ppd = glm::dot(normal, playerPos) + d;
+            float ppd = glm::dot(normal, nextPos) + d;
 
             if (fabs(ppd) > RADIUS) {
                 outsidePlane = true;
@@ -141,16 +144,16 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos) {
 
             auto project2D = [&](const glm::vec3 &p){ return glm::vec2(glm::dot(p, planeX), glm::dot(p, planeY)); };
 
-            glm::vec2 planePos2D = project2D(playerPos);
+            glm::vec2 planePos2D = project2D(nextPos);
             glm::vec2 triangle2D[3] = {project2D(v0), project2D(v1), project2D(v2)};
 
             if (pointInside(triangle2D, 3, planePos2D)) {
                 fullyInsidePlane = true;
             }
 
-            bool outsideV0 = (glm::length2(v0 - playerPos) > RADIUS_2);
-            bool outsideV1 = (glm::length2(v1 - playerPos) > RADIUS_2);
-            bool outsideV2 = (glm::length2(v2 - playerPos) > RADIUS_2);
+            bool outsideV0 = (glm::length2(v0 - nextPos) > RADIUS_2);
+            bool outsideV1 = (glm::length2(v1 - nextPos) > RADIUS_2);
+            bool outsideV2 = (glm::length2(v2 - nextPos) > RADIUS_2);
 
             if (outsideV0 && outsideV1 && outsideV2) {
                 outsideAllVerts = true;
@@ -158,9 +161,9 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos) {
 
             glm::vec3 ip;
 
-            if (!intersectRaySegmentSphere(v0, a, playerPos, RADIUS_2, ip) &&
-                !intersectRaySegmentSphere(v1, b, playerPos, RADIUS_2, ip) &&
-                !intersectRaySegmentSphere(v2, c, playerPos, RADIUS_2, ip)) 
+            if (!intersectRaySegmentSphere(v0, a, nextPos, RADIUS_2, ip) &&
+                !intersectRaySegmentSphere(v1, b, nextPos, RADIUS_2, ip) &&
+                !intersectRaySegmentSphere(v2, c, nextPos, RADIUS_2, ip)) 
             {
                 outsideAllEdges = true;
             }
@@ -172,7 +175,7 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos) {
                 // std::cout << "edge" << ip.x << ip.y << ip.z << std::endl;
             }
             if (fullyInsidePlane) {
-                std::cout << "insidePlane" << std::endl;
+                // std::cout << "insidePlane" << std::endl;
             }
             if (!outsidePlane) {
                 // std::cout << "intersectPlane: " << ppd << std::endl;
@@ -182,9 +185,60 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos) {
                 continue;
             }
 
-            shiftDelta += normal * (playerPos - ppd);
-            numCollisions++;
-            collideMesh = true;
+            // distance from plane
+            // if floor adjust along positive Y
+            // how much to increase Y until 
+
+            // if wall adjust along XZ plane
+            // if behind plane, adjust movement vector 
+
+            // shiftDelta += normal * (nextPos - ppd);
+
+            // CODE FOR IF ITS A WALL
+            // If its a wall, then project find the movement vector from the point of intersection with the plane
+            // Take this remaining movement vector, then project it onto the plane
+            float theta_wall_1 = 80.0f;
+            float theta_wall_2 = 100.0f;
+            float cos_theta_wall_1 = glm::cos(glm::radians(theta_wall_1));
+            float cos_theta_wall_2 = glm::cos(glm::radians(theta_wall_2));
+            float cos_phi = normal.y / glm::length(normal);
+            if (cos_phi < cos_theta_wall_1 && cos_phi > cos_theta_wall_2) {
+                // plane intersection code is the same as the floor stuff
+                // instead of shifting along Y axis though, we must shift along the movement vector
+                // then, the remaining slice of the movement vector will be projected onto the plane
+                float a_p, b_p, c_p, d_p;
+                a_p = normal.x;
+                b_p = normal.y;
+                c_p = normal.z;
+                d_p = -1*(a_p*v0.x + b_p*v0.y + c_p*v0.z);
+
+                float eq_denom = (a_p*movVec.x + b_p*movVec.y + c_p*movVec.z);
+                if (fabs(eq_denom) < 0.001) {
+                    continue;
+                }
+                float f = (RADIUS * sqrtf(a_p*a_p + b_p*b_p + c_p*c_p) - (d_p + a_p*playerPos.x + b_p*playerPos.y + c_p*playerPos.z)) / eq_denom;
+                float f_other = 1-f;
+                numCollisions++;
+                collideMesh = true;
+                shiftDelta += glm::vec3(-f_other * movVec.x, 0.0f, -f_other * movVec.z);
+            }
+
+            // CODE FOR IF ITS A FLOOR
+            float theta_floor = 30.0f;
+            float cos_theta_floor = glm::cos(glm::radians(theta_floor));
+            // std::cout << "x: " << normal.x << " y: " << normal.y << " z: " << normal.z << std::endl;
+            if (cos_phi > cos_theta_floor) {
+                float a_p, b_p, c_p, d_p;
+                a_p = normal.x;
+                b_p = normal.y;
+                c_p = normal.z;
+                d_p = -1*(a_p*v0.x + b_p*v0.y + c_p*v0.z);
+
+                float yc = (RADIUS * sqrtf(a_p*a_p + b_p*b_p + c_p*c_p) - a_p*nextPos.x - c_p*nextPos.z - d_p)/b_p;
+                numCollisions++;
+                collideMesh = true;
+                shiftDelta += glm::vec3(0.0f, yc - nextPos.y, 0.0f);
+            }
         }
 
         if (collideMesh) {
@@ -193,19 +247,14 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos) {
         else {
             mesh.addColor = glm::vec3(0.0f, 0.0f, 0.0f);
         }
-
-        // player is intersecting the plane
-        // player is intersecting an edge
-        // player is inside the face
-
-        // player is intersecting a vertex
     }
 
     // if (numCollisions != 0) {
     //     shiftDelta /= (float)numCollisions;
-    //     if (shiftDelta.length() > lastWalkSpeed) {
+    //     float walkSpeed = 2.5f;
+    //     if (glm::length(shiftDelta) > walkSpeed) {
     //         shiftDelta = glm::normalize(shiftDelta);
-    //         shiftDelta *= lastWalkSpeed*1.1f;
+    //         shiftDelta *= walkSpeed*1.1f;
     //     }
     // }
 

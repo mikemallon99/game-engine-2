@@ -29,7 +29,7 @@ float mixValue;
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-glm::vec3 cameraPos   = glm::vec3(3.0f, 0.0f,  3.0f);
+glm::vec3 cameraPos   = glm::vec3(3.0f, 3.0f,  3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
@@ -154,6 +154,10 @@ void processInput(GLFWwindow *window)
     }
     if (direction != glm::vec3(0.0f, 0.0f, 0.0f)) {
         camera.ProcessKeyboard(direction, deltaTime);
+    }
+    else {
+        // TODO: handle the move vector better
+        camera.movVector = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
     // flashlight
@@ -391,7 +395,17 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;  
 
-        camera.Position = calcGravity(camera.Position);
+        glm::vec3 gravityMov = calcGravity();
+
+        // collisions
+        glm::vec3 totalMovVector = camera.movVector + gravityMov;
+        glm::vec3 shiftVector = roomCol.checkCollisions(camera.Position, totalMovVector);
+        glm::vec3 finalMovVector = totalMovVector + shiftVector;
+        camera.Position += finalMovVector;
+        // TODO: change this, tells us nothing about if were touching the floor or not
+        if (shiftVector.y > 0.0f) {
+            yVelocity = 0.0f;
+        }
 
         std::vector<bool> boxColliding;
         for (int i=0; i < cubeMap.size(); i++) {
@@ -500,7 +514,7 @@ int main() {
         well.Draw(lightingShader);
 
         // room stuff
-        roomCol.checkCollisions(camera.Position);
+
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
