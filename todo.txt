@@ -104,3 +104,8 @@ have the collisions be a plane
 texture the map, load in textures 
 rewrite collisions to work with the map
 
+list of stuff:
+- ability to select map
+- bug with texture select
+- make a better map
+- make a skybox 

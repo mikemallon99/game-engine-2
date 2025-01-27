@@ -13,9 +13,25 @@
 - make collision function use initialPoint and movVector
 - solve equation for projecting movement vector along plane
 
-1/23/25
+1/24/25
 - got first equation working inside the game
 - made collision function use initialPoint and movVector
 (for tomorrow)
 - solve equation for projecting movement vector along plane
 - start putting it into the game
+
+1/25/25
+- got collisions working
+(for tomorrow)
+- make collisions adjust with scale, translations, rotations
+- ability to select map
+- bug with texture select
+
+1/26/25
+- added skybox
+- made new 3d model of park
+(for tomorrow)
+- show player coordinates in side UI
+- move well to the middle of the map
+- remove weird bathroom tile UV's
+- floor vector walking

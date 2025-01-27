@@ -23,8 +23,8 @@
 // User has a current selection, and can use arrow keys to move the cursor around
 // when the item on the menu is highlighted, then the color of it will change
 
-glm::vec3 selColor = glm::vec3(0.9, 0.9f, 0.9f);
-glm::vec3 defaultColor = glm::vec3(0.3, 0.7f, 0.9f);
+glm::vec3 selColor = glm::vec3(0.8f, 1.0f, 0.8f);
+glm::vec3 defaultColor = glm::vec3(0.0, 1.0f, 0.0f);
 
 // class Vec3VectorView {
 // public:
@@ -53,6 +53,7 @@ enum MenuNodeType {
     STRING,
     VALUE,
     EDITABLE_VALUE,
+    VEC3_VALUE,
     FACE_VECTOR_VIEW,
     FACE_VIEW,
 };
@@ -64,6 +65,7 @@ public:
     float* valuePtr;
     std::vector<Face*>* faceVectorPtr;
     Face* facePtr;
+    glm::vec3* vec3ValuePtr;
     float delta;
     int cursorPos;
     MenuNodeType menuType;
@@ -81,6 +83,14 @@ public:
         menuType = STRING;
         select_func = nullptr;
         valuePtr = nullptr;
+    }
+
+    MenuNode(std::string name, glm::vec3* value_in) {
+        label = name;
+        cursorPos = 0;
+        menuType = VEC3_VALUE;
+        select_func = nullptr;
+        vec3ValuePtr = value_in;
     }
 
     MenuNode(std::string name, float* data_ptr) {
@@ -157,6 +167,11 @@ public:
         else if (menuType == VALUE) {
             std::ostringstream oss;
             oss << label << ": " << *valuePtr;
+            return oss.str();
+        }
+        else if (menuType == VEC3_VALUE) {
+            std::ostringstream oss;
+            oss << label << " = x: " << (*vec3ValuePtr).x << " y: " << (*vec3ValuePtr).y << " z: " << (*vec3ValuePtr).z;
             return oss.str();
         }
         else if (menuType == EDITABLE_VALUE) {
@@ -256,7 +271,7 @@ public:
     ~DebugMenu();
     void Draw(Shader s);
     void ProcessKeyboard(GLFWwindow *window);
-    void Setup(Stage* stage_in);
+    void Setup(Stage* stage_in, glm::vec3* playerPosPtr);
 
 private:
     std::vector<MenuNode*> allMenuNodes;
@@ -267,7 +282,7 @@ private:
 //      menu page, menu page filled with entries, entries can do a function or change active menu page, also push to a stack
 //      what to do if i want to do stuff like have incrementing, sublists, etc?
 
-void DebugMenu::Setup(Stage* stage_in) {
+void DebugMenu::Setup(Stage* stage_in, glm::vec3* playerPosPtr) {
     stage = stage_in;
 
     kbdMgr.registerKeyboard(&kbd);
@@ -293,9 +308,12 @@ void DebugMenu::Setup(Stage* stage_in) {
     };
     editMenu = new MenuNode("edit_faces", &(stage->faceVector), sel_func);
 
+    MenuNode* coordsMenu = new MenuNode("playerPos", playerPosPtr);
+
     // Add "File" and "Edit" menus to the root
     root->Add(textureMenu);
     root->Add(editMenu);
+    root->Add(coordsMenu);
 }
 
 DebugMenu::~DebugMenu() {

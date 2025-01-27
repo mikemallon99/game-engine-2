@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -34,11 +35,13 @@ public:
     vector<Mesh>    meshes;
     string directory;
     bool gammaCorrection;
+    glm::mat4 model;
 
     // constructor, expects a filepath to a 3D model.
     Model(string const &path, bool gamma = false) : gammaCorrection(gamma)
     {
         loadModel(path);
+        model = glm::mat4(1.0f);
     }
 
     // draws the model, and thus all its meshes

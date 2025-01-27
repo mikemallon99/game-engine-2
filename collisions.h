@@ -5,6 +5,8 @@
 
 #include "model.h"
 
+#include <utility>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -22,7 +24,7 @@ public:
     Model* model;
 
     CollisionObject(Model* m);
-    glm::vec3 checkCollisions(glm::vec3 playerPos, glm::vec3 movVec);
+    std::pair<glm::vec3, bool> checkCollisions(glm::vec3 playerPos, glm::vec3 movVec, glm::mat4 xform);
 };
 
 CollisionObject::CollisionObject(Model* m) {
@@ -101,12 +103,12 @@ static bool pointInside(const glm::vec2 poly[], int pcount, const glm::vec2 &v)
   return true;
 }
 
-glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos, glm::vec3 movVec) {
-    glm::vec3 shiftDelta = glm::vec3(0.0f, 0.0f, 0.0f);
+std::pair<glm::vec3, bool> CollisionObject::checkCollisions(glm::vec3 playerPos, glm::vec3 movVec, glm::mat4 xform) {
     int numCollisions = 0;
+    bool hitFloor = false;
 
     glm::vec3 nextPos = playerPos + movVec;
-    // glm::vec3 nextPos = playerPos;
+    glm::vec3 curPos = playerPos;
 
     // Iterate through each mesh in the model
     for (int i=0; i < model->meshes.size(); i++) {
@@ -116,6 +118,8 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos, glm::vec3 movVec
 
         // For each triangle
         for (int t=0; t < mesh.indices.size()/3; t++) {
+            glm::vec3 shiftDelta = glm::vec3(0.0f, 0.0f, 0.0f);
+
             bool outsidePlane = false;
             bool outsideAllVerts = false;
             bool outsideAllEdges = false;
@@ -124,6 +128,12 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos, glm::vec3 movVec
             glm::vec3 v0 = mesh.vertices[mesh.indices[3*t + 0]].Position;
             glm::vec3 v1 = mesh.vertices[mesh.indices[3*t + 1]].Position;
             glm::vec3 v2 = mesh.vertices[mesh.indices[3*t + 2]].Position;
+
+            // Need to xform the vertices
+            // TODO: Ideally we would do this on the GPU or anywhere else other than here
+            v0 = glm::vec3(xform * glm::vec4(v0, 1.0f));
+            v1 = glm::vec3(xform * glm::vec4(v1, 1.0f));
+            v2 = glm::vec3(xform * glm::vec4(v2, 1.0f));
 
             glm::vec3 normal = glm::normalize(mesh.vertices[mesh.indices[3*t + 0]].Normal);
 
@@ -216,11 +226,17 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos, glm::vec3 movVec
                 if (fabs(eq_denom) < 0.001) {
                     continue;
                 }
-                float f = (RADIUS * sqrtf(a_p*a_p + b_p*b_p + c_p*c_p) - (d_p + a_p*playerPos.x + b_p*playerPos.y + c_p*playerPos.z)) / eq_denom;
+                float f = (RADIUS * sqrtf(a_p*a_p + b_p*b_p + c_p*c_p) - (d_p + a_p*curPos.x + b_p*curPos.y + c_p*curPos.z)) / eq_denom;
                 float f_other = 1-f;
                 numCollisions++;
                 collideMesh = true;
-                shiftDelta += glm::vec3(-f_other * movVec.x, 0.0f, -f_other * movVec.z);
+                shiftDelta += glm::vec3(-f_other * movVec.x, -f_other * movVec.y, -f_other * movVec.z);
+
+                // Project remaining vector onto plane
+                glm::vec3 remainMov = nextPos - glm::vec3(curPos.x + f * movVec.x, curPos.y + f * movVec.y, curPos.z + f * movVec.z);
+                float rmDot = glm::dot(remainMov, normal);
+                glm::vec3 v_perp = rmDot * normal;
+                shiftDelta += remainMov - v_perp;
             }
 
             // CODE FOR IF ITS A FLOOR
@@ -238,33 +254,22 @@ glm::vec3 CollisionObject::checkCollisions(glm::vec3 playerPos, glm::vec3 movVec
                 numCollisions++;
                 collideMesh = true;
                 shiftDelta += glm::vec3(0.0f, yc - nextPos.y, 0.0f);
+                hitFloor = true;
             }
+
+            movVec += shiftDelta;
+            nextPos = curPos + movVec;
         }
 
         if (collideMesh) {
-            mesh.addColor = glm::vec3(1.0f, 0.0f, 0.0f);
+            mesh.addColor = glm::vec3(0.2f, 0.0f, 0.0f);
         }
         else {
             mesh.addColor = glm::vec3(0.0f, 0.0f, 0.0f);
         }
     }
 
-    // if (numCollisions != 0) {
-    //     shiftDelta /= (float)numCollisions;
-    //     float walkSpeed = 2.5f;
-    //     if (glm::length(shiftDelta) > walkSpeed) {
-    //         shiftDelta = glm::normalize(shiftDelta);
-    //         shiftDelta *= walkSpeed*1.1f;
-    //     }
-    // }
-
-    // Set position
-
-    // If the conditions are true
-    // If player is behind the plane, move it along the normal by D + R
-    // If player is in front of the plane, move it along the normal by R - D
-
-    return shiftDelta;
+    return {movVec, hitFloor};
 }
 
 

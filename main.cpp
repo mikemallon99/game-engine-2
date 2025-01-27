@@ -29,7 +29,7 @@ float mixValue;
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-glm::vec3 cameraPos   = glm::vec3(3.0f, 3.0f,  3.0f);
+glm::vec3 cameraPos   = glm::vec3(1.0f, 2.0f,  1.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
@@ -129,6 +129,40 @@ unsigned int loadTexture(char const * path)
 
     return textureID;
 }
+
+unsigned int loadCubemap(vector<std::string> faces)
+{
+    stbi_set_flip_vertically_on_load(false); 
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    stbi_set_flip_vertically_on_load(true); 
+    return textureID;
+}  
 
 bool flashlightOn = true;
 void processInput(GLFWwindow *window)
@@ -302,7 +336,7 @@ int main() {
     Shader lightingShader("shader.vs", "shader.fs");
     Shader lightCubeShader("shader.vs", "light.fs");
     Shader textShader("text_shader.vs", "text_shader.fs");
-
+    Shader skyboxShader("skybox.vs", "skybox.fs");
     Shader wireframeShader("wireframe.vs", "wireframe.gs", "wireframe.fs");
     // Shader ourShader("model_loading.vs", "model_loading.fs");
 
@@ -369,17 +403,42 @@ int main() {
 
     // Model backpack("models/backpack/backpack.obj");
     Model sword("models/sword.obj");
+    sword.model = glm::translate(sword.model, glm::vec3(6.0f, 1.0f, 6.0f)); // translate it down so it's at the center of the scene
+    sword.model = glm::scale(sword.model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+
     Model well("models/well.obj");
+    well.model = glm::translate(well.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+    well.model = glm::scale(well.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
+
     Model room("models/room.obj");
+    room.model = glm::translate(room.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+    room.model = glm::scale(room.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
+
+    Model park("models/park.obj");
+    park.model = glm::translate(park.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+    park.model = glm::scale(park.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
 
     CollisionObject roomCol(&room);
+    CollisionObject parkCol(&park);
 
     loadTextStuff();
 
     stage.init();
-    debugMenu.Setup(&stage);
+    debugMenu.Setup(&stage, &(camera.Position));
 
     kbdMgr.registerKeyboard(&kbd);
+
+    // Skybox 
+    vector<std::string> faces
+    {
+        "textures/skybox/right.jpg",
+        "textures/skybox/left.jpg",
+        "textures/skybox/top.jpg",
+        "textures/skybox/bottom.jpg",
+        "textures/skybox/front.jpg",
+        "textures/skybox/back.jpg"
+    };
+    unsigned int cubemapTexture = loadCubemap(faces);  
 
     while(!glfwWindowShouldClose(window))
     {
@@ -395,28 +454,54 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;  
 
-        glm::vec3 gravityMov = calcGravity();
+        // view/projection transformations
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)800 / (float)600, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
 
-        // collisions
+        // PHYSICS & COLLISIONS
+        // AABB Box collisions
+        // std::vector<bool> boxColliding;
+        // for (int i=0; i < cubeMap.size(); i++) {
+        //     glm::vec3 initPos = camera.Position;
+        //     camera.Position = calcCollisions(camera.Position, cubeMap[i]);
+        //     if (initPos != camera.Position) {
+        //         boxColliding.push_back(true);
+        //     } else {
+        //         boxColliding.push_back(false);
+        //     }
+        // }
+
+        glm::vec3 gravityMov = calcGravity();
         glm::vec3 totalMovVector = camera.movVector + gravityMov;
-        glm::vec3 shiftVector = roomCol.checkCollisions(camera.Position, totalMovVector);
-        glm::vec3 finalMovVector = totalMovVector + shiftVector;
-        camera.Position += finalMovVector;
-        // TODO: change this, tells us nothing about if were touching the floor or not
-        if (shiftVector.y > 0.0f) {
+        // collisions against room model
+        // auto colResult = roomCol.checkCollisions(camera.Position, totalMovVector, room.model);
+        // glm::vec3 newMovVec = colResult.first;
+        // bool hitFloor = colResult.second;
+        // camera.Position += newMovVec;
+        // if (hitFloor) {
+        //     yVelocity = 0.0f;
+        // }
+        auto colResult = parkCol.checkCollisions(camera.Position, totalMovVector, park.model);
+        glm::vec3 newMovVec = colResult.first;
+        bool hitFloor = colResult.second;
+        camera.Position += newMovVec;
+        if (hitFloor) {
             yVelocity = 0.0f;
         }
 
-        std::vector<bool> boxColliding;
-        for (int i=0; i < cubeMap.size(); i++) {
-            glm::vec3 initPos = camera.Position;
-            camera.Position = calcCollisions(camera.Position, cubeMap[i]);
-            if (initPos != camera.Position) {
-                boxColliding.push_back(true);
-            } else {
-                boxColliding.push_back(false);
-            }
-        }
+        // RENDERING
+        glDepthMask(GL_FALSE);
+        skyboxShader.use();
+        skyboxShader.setMat4("projection", projection);
+        glm::mat4 viewSkybox = glm::mat4(glm::mat3(view));
+        skyboxShader.setMat4("view", viewSkybox);
+        glUniform1i(glGetUniformLocation(skyboxShader.ID, "skybox"), 0);
+
+        glBindVertexArray(VAO); 
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
+        // ... draw rest of the scene
 
         lightingShader.use();
         lightingShader.setVec3("viewPos", camera.Position);
@@ -483,14 +568,8 @@ int main() {
             lightingShader.setVec3("spotLight.specular", 0.0f, 0.0f, 0.0f);
         }
 
-
-        // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)800 / (float)600, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
-
-        glm::mat4 model;
 
         // render the loaded model
         // model = glm::mat4(1.0f);
@@ -499,32 +578,16 @@ int main() {
         // lightingShader.setMat4("model", model);
         // backpack.Draw(lightingShader);
 
-        // render the sword
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(6.0f, 1.0f, 6.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        lightingShader.setMat4("model", model);
-        sword.Draw(lightingShader);
-
-        // render the well
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(6.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
-        lightingShader.setMat4("model", model);
-        well.Draw(lightingShader);
-
         // room stuff
+        // lightingShader.setMat4("model", room.model);
+        // room.Draw(lightingShader);
+        // wireframeShader.use();
+        // wireframeShader.setMat4("model", room.model);
+        // wireframeShader.setMat4("projection", projection);
+        // wireframeShader.setMat4("view", view);
+        // room.Draw(wireframeShader);
 
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        lightingShader.setMat4("model", model);
-        room.Draw(lightingShader);
-        wireframeShader.use();
-        wireframeShader.setMat4("model", model);
-        wireframeShader.setMat4("projection", projection);
-        wireframeShader.setMat4("view", view);
-        room.Draw(wireframeShader);
+        // -- begin section involving texture select --
 
         // bind diffuse map
         lightingShader.use();
@@ -552,21 +615,32 @@ int main() {
         }
         glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"), 1);
 
+        // render the sword
+        lightingShader.setMat4("model", sword.model);
+        sword.Draw(lightingShader);
+
+        // render the well
+        lightingShader.setMat4("model", well.model);
+        well.Draw(lightingShader);
+
+        // This draws all our AABB boxes
+        glm::mat4 model = glm::mat4(1.0f);
         glBindVertexArray(VAO); 
-        for (int i=0; i < cubeMap.size(); i++) {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, cubeMap[i]); // translate it down so it's at the center of the scene
-            lightingShader.setMat4("model", model);
-            if (boxColliding[i]) {
-                lightingShader.setVec3("addColor", glm::vec3(0.5f, 0.5f, 0.5f));
-            }
-            else {
-                lightingShader.setVec3("addColor", glm::vec3(0.0f, 0.0f, 0.0f));
-            }
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        // for (int i=0; i < cubeMap.size(); i++) {
+        //     model = glm::mat4(1.0f);
+        //     model = glm::translate(model, cubeMap[i]); // translate it down so it's at the center of the scene
+        //     lightingShader.setMat4("model", model);
+        //     if (boxColliding[i]) {
+        //         lightingShader.setVec3("addColor", glm::vec3(0.5f, 0.5f, 0.5f));
+        //     }
+        //     else {
+        //         lightingShader.setVec3("addColor", glm::vec3(0.0f, 0.0f, 0.0f));
+        //     }
+        //     glDrawArrays(GL_TRIANGLES, 0, 36);
+        // }
 
         // This should just draw a face
+        lightingShader.setVec3("addColor", glm::vec3(0.0f, 0.0f, 0.0f));
         for (int i=0; i < stage.faceVector.size(); i++) {
             model = glm::mat4(1.0f);
             model = glm::translate(model, stage.faceVector[i]->translate); 
@@ -574,6 +648,18 @@ int main() {
             lightingShader.setMat4("model", model);
             stage.faceVector[i]->Draw();
         }
+
+        // Unbind texture stuff
+        glActiveTexture(GL_TEXTURE0); 
+        glBindTexture(GL_TEXTURE_2D, 0); 
+        glActiveTexture(GL_TEXTURE1); 
+        glBindTexture(GL_TEXTURE_2D, 0); 
+
+        // -- end section involving texture select --
+
+        // park stuff
+        lightingShader.setMat4("model", park.model);
+        park.Draw(lightingShader);
 
         // also draw the lamp object(s)
         lightCubeShader.use();
