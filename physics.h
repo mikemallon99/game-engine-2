@@ -36,17 +36,17 @@ glm::vec3 calcGravity() {
     return newPos;
 }
 
-glm::vec3 calcCollisions(glm::vec3 playerPos, glm::vec3 rigidBodyPos) {
-    glm::vec3 newPos = playerPos;
+glm::vec3 calcCollisions(glm::vec3 playerPos, glm::vec3 movVec, glm::vec3 rigidBodyPos) {
+    glm::vec3 newPos = playerPos + movVec;
 
     // Translate player bbox
     AABB playerTrans;
-    playerTrans.x0 = player.x0 + playerPos.x;
-    playerTrans.y0 = player.y0 + playerPos.y;
-    playerTrans.z0 = player.z0 + playerPos.z;
-    playerTrans.x1 = player.x1 + playerPos.x;
-    playerTrans.y1 = player.y1 + playerPos.y;
-    playerTrans.z1 = player.z1 + playerPos.z;
+    playerTrans.x0 = player.x0 + newPos.x;
+    playerTrans.y0 = player.y0 + newPos.y;
+    playerTrans.z0 = player.z0 + newPos.z;
+    playerTrans.x1 = player.x1 + newPos.x;
+    playerTrans.y1 = player.y1 + newPos.y;
+    playerTrans.z1 = player.z1 + newPos.z;
 
     AABB rbBoxTrans;
     rbBoxTrans.x0 = rbBBox.x0 + rigidBodyPos.x;
@@ -147,7 +147,7 @@ glm::vec3 calcCollisions(glm::vec3 playerPos, glm::vec3 rigidBodyPos) {
         if (yOverlapAbs <= YSNAP) {
             newPos.y += yOverlap;
             yVelocity = 0.0f;
-            return newPos;
+            return newPos - playerPos;
         }
 
         if (zOverlapAbs <= xOverlapAbs && zOverlapAbs <= yOverlapAbs) {
@@ -160,11 +160,8 @@ glm::vec3 calcCollisions(glm::vec3 playerPos, glm::vec3 rigidBodyPos) {
         else {
             newPos.x += xOverlap;
         }
-        return newPos;
     }
-    else {
-        return playerPos;
-    }
+    return newPos - playerPos;
 }
 
 #endif

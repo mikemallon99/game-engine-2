@@ -106,6 +106,17 @@ rewrite collisions to work with the map
 
 list of stuff:
 - ability to select map
-- bug with texture select
-- make a better map
-- make a skybox 
+- bug with texture select (done)
+- make a better map (done)
+- make a skybox  (done)
+- make collisions into a cylinder
+- add in walk and jump sounds
+
+object selection system:
+- function that can cast a ray and see if it hits an object 
+- object selection system which can select different types of objects (AABB, model)
+- function that can project the mouses ray direction onto an XYZ axis
+- geometry shader for xyz modals + xyz axes that spawns it on the current axis
+- fragment shader which outlines the currently selected object in orange
+- function that casts a ray to select a model on the currently selected object
+

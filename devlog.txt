@@ -35,3 +35,20 @@
 - move well to the middle of the map
 - remove weird bathroom tile UV's
 - floor vector walking
+
+1/27/25
+- show player coordinates in side UI
+- move well to the middle of the map
+- remove weird bathroom tile UV's
+
+1/28/25
+- went through most of openal audio tutorial: https://indiegamedev.net/2020/02/15/the-complete-guide-to-openal-with-c-part-1-playing-a-sound/
+(for tomorrow)
+- debug what i have in tutorial
+- get walking sound
+
+1/29/25
+- got sound to play when you press a button
+(for tomorrow)
+- get footstep sound to play when you are walking in a direction
+- load multiple sounds

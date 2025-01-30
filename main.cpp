@@ -22,6 +22,7 @@
 #include "keyboard.h"
 #include "stage.h"
 #include "collisions.h"
+#include "sound.h"
 
 
 // MOVE: used for text studd
@@ -32,6 +33,10 @@ float lastFrame = 0.0f; // Time of last frame
 glm::vec3 cameraPos   = glm::vec3(1.0f, 2.0f,  1.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+
+SoundManager soundMgr;
+int fartIdx;
+int stepIdx;
 
 Camera camera(cameraPos);
 Stage stage;
@@ -199,6 +204,11 @@ void processInput(GLFWwindow *window)
         flashlightOn = !flashlightOn;
     }
 
+    // play sound
+    if (kbd.checkKey(GLFW_KEY_Q)) {
+        soundMgr.play_sound(fartIdx);
+    }
+
     // Physics
     if (kbd.checkKey(GLFW_KEY_SPACE)) {
         yVelocity = 0.05f;
@@ -226,6 +236,12 @@ glm::mat4 makeLookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
 }
 
 int main() {
+    // OPENAL TESTING, MOVE THIS
+    soundMgr.init();
+    fartIdx = soundMgr.load_sound("sounds/fart-03.wav");
+    stepIdx = soundMgr.load_sound("sounds/grass_step.wav");
+
+    // OPENGL STUFF
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -418,6 +434,10 @@ int main() {
     park.model = glm::translate(park.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
     park.model = glm::scale(park.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
 
+    // Model cubeModel("models/cube.obj");
+    // park.model = glm::translate(park.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+    // park.model = glm::scale(park.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
+
     CollisionObject roomCol(&room);
     CollisionObject parkCol(&park);
 
@@ -440,6 +460,7 @@ int main() {
     };
     unsigned int cubemapTexture = loadCubemap(faces);  
 
+    float lastStepTime = glfwGetTime();
     while(!glfwWindowShouldClose(window))
     {
         // Input stuff
@@ -481,13 +502,27 @@ int main() {
         // if (hitFloor) {
         //     yVelocity = 0.0f;
         // }
+
+        // AABB collisions against well bounding box
+        glm::vec3 wellAABB = glm::vec3(0.0f, 0.5f, 0.0f);
+        totalMovVector = calcCollisions(camera.Position, totalMovVector, wellAABB);
+
         auto colResult = parkCol.checkCollisions(camera.Position, totalMovVector, park.model);
         glm::vec3 newMovVec = colResult.first;
         bool hitFloor = colResult.second;
         camera.Position += newMovVec;
         if (hitFloor) {
             yVelocity = 0.0f;
+            // Play hit ground sound when we hit the floor
+            // soundMgr.play_sound(stepIdx);
         }
+
+        // Play step sound if weve moved
+        if (currentFrame - lastStepTime > 0.5 && glm::length(newMovVec) > 0.025 && hitFloor) {
+            soundMgr.play_sound(stepIdx);
+            lastStepTime = currentFrame;
+        }
+        
 
         // RENDERING
         glDepthMask(GL_FALSE);
@@ -626,6 +661,12 @@ int main() {
         // This draws all our AABB boxes
         glm::mat4 model = glm::mat4(1.0f);
         glBindVertexArray(VAO); 
+        model = glm::translate(model, wellAABB); // translate it down so it's at the center of the scene
+        wireframeShader.use();
+        wireframeShader.setMat4("model", model);
+        wireframeShader.setMat4("projection", projection);
+        wireframeShader.setMat4("view", view);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
         // for (int i=0; i < cubeMap.size(); i++) {
         //     model = glm::mat4(1.0f);
         //     model = glm::translate(model, cubeMap[i]); // translate it down so it's at the center of the scene
@@ -640,6 +681,7 @@ int main() {
         // }
 
         // This should just draw a face
+        lightingShader.use();
         lightingShader.setVec3("addColor", glm::vec3(0.0f, 0.0f, 0.0f));
         for (int i=0; i < stage.faceVector.size(); i++) {
             model = glm::mat4(1.0f);
@@ -685,6 +727,7 @@ int main() {
 
     // glDeleteVertexArrays(1, &VAO);
     // glDeleteBuffers(1, &VBO1);
+    soundMgr.destroy();
 
     glfwTerminate();
     return 0;
