@@ -52,3 +52,18 @@
 (for tomorrow)
 - get footstep sound to play when you are walking in a direction
 - load multiple sounds
+
+1/30/25
+- got sound to play when you press a button
+(for tomorrow)
+- get footstep sound to play when you are walking in a direction
+- load multiple sounds
+
+1/31/25
+- started debugging intermittent crash, added error code printing around texture load
+- prepping AABB creation for object selection system
+
+2/1/25
+- Fixed bug with drawing AABB box with proper collisions
+- more confusion about crash bug
+- came up with idea for AABB raycast and wrote function for it, need to debug

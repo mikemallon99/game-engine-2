@@ -5,6 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "geom_primitives.h"
+
 // Update physics function
 // If on floor, dont need to calculate
 // If in the air, need to calculate
@@ -14,18 +16,8 @@
 
 float YSNAP = 0.05;
 
-struct AABB {
-    // These are all planes
-    float x0;
-    float x1;
-    float y0;
-    float y1;
-    float z0;
-    float z1;
-};
-
-AABB rbBBox = AABB{-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f};
-AABB player = AABB{-0.2f, 0.2f, -0.5f, 0.5f, -0.2f, 0.2f};
+// AABB rbBBox = AABB{-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f};
+AABB playerBBox = AABB(-0.2f, 0.2f, -0.5f, 0.5f, -0.2f, 0.2f);
 
 float yVelocity = 0.0f;
 
@@ -36,106 +28,99 @@ glm::vec3 calcGravity() {
     return newPos;
 }
 
-glm::vec3 calcCollisions(glm::vec3 playerPos, glm::vec3 movVec, glm::vec3 rigidBodyPos) {
+glm::vec3 calcCollisionsAABB(glm::vec3 playerPos, glm::vec3 movVec, AABB rbBox) {
     glm::vec3 newPos = playerPos + movVec;
 
-    // Translate player bbox
-    AABB playerTrans;
-    playerTrans.x0 = player.x0 + newPos.x;
-    playerTrans.y0 = player.y0 + newPos.y;
-    playerTrans.z0 = player.z0 + newPos.z;
-    playerTrans.x1 = player.x1 + newPos.x;
-    playerTrans.y1 = player.y1 + newPos.y;
-    playerTrans.z1 = player.z1 + newPos.z;
-
-    AABB rbBoxTrans;
-    rbBoxTrans.x0 = rbBBox.x0 + rigidBodyPos.x;
-    rbBoxTrans.y0 = rbBBox.y0 + rigidBodyPos.y;
-    rbBoxTrans.z0 = rbBBox.z0 + rigidBodyPos.z;
-    rbBoxTrans.x1 = rbBBox.x1 + rigidBodyPos.x;
-    rbBoxTrans.y1 = rbBBox.y1 + rigidBodyPos.y;
-    rbBoxTrans.z1 = rbBBox.z1 + rigidBodyPos.z;
+    // Translate playerBBox bbox
+    AABB playerTrans(
+        playerBBox.x0 + newPos.x, 
+        playerBBox.x1 + newPos.x,
+        playerBBox.y0 + newPos.y,
+        playerBBox.y1 + newPos.y,
+        playerBBox.z0 + newPos.z,
+        playerBBox.z1 + newPos.z
+    );
 
     // Check for overlap
     // X
     bool xCol = false;
     float xOverlap = 0.0f;
-    if (rbBoxTrans.x0 <= playerTrans.x0 && playerTrans.x0 <= rbBoxTrans.x1 && rbBoxTrans.x1 <= playerTrans.x1) {
+    if (rbBox.x0 <= playerTrans.x0 && playerTrans.x0 <= rbBox.x1 && rbBox.x1 <= playerTrans.x1) {
         xCol = true;
-        xOverlap = rbBoxTrans.x1 - playerTrans.x0;
+        xOverlap = rbBox.x1 - playerTrans.x0;
     }
-    if (rbBoxTrans.x0 <= playerTrans.x0 && playerTrans.x0 <= playerTrans.x1 && playerTrans.x1 <= rbBoxTrans.x1) {
+    if (rbBox.x0 <= playerTrans.x0 && playerTrans.x0 <= playerTrans.x1 && playerTrans.x1 <= rbBox.x1) {
         xCol = true;
-        if ((rbBoxTrans.x1 - playerTrans.x1) <= (playerTrans.x0 - rbBoxTrans.x0)) {
-            xOverlap = rbBoxTrans.x1 - playerTrans.x0;
+        if ((rbBox.x1 - playerTrans.x1) <= (playerTrans.x0 - rbBox.x0)) {
+            xOverlap = rbBox.x1 - playerTrans.x0;
         } else {
-            xOverlap = rbBoxTrans.x0 - playerTrans.x1;
+            xOverlap = rbBox.x0 - playerTrans.x1;
         }
     }
-    else if(playerTrans.x0 <= rbBoxTrans.x0 && rbBoxTrans.x0 <= playerTrans.x1 && playerTrans.x1 <= rbBoxTrans.x1) {
+    else if(playerTrans.x0 <= rbBox.x0 && rbBox.x0 <= playerTrans.x1 && playerTrans.x1 <= rbBox.x1) {
         xCol = true;
-        xOverlap = -1 * (playerTrans.x1 - rbBoxTrans.x0);
+        xOverlap = -1 * (playerTrans.x1 - rbBox.x0);
     }
-    else if(playerTrans.x0 <= rbBoxTrans.x0 && rbBoxTrans.x0 <= rbBoxTrans.x1 && rbBoxTrans.x1 <= playerTrans.x1) {
+    else if(playerTrans.x0 <= rbBox.x0 && rbBox.x0 <= rbBox.x1 && rbBox.x1 <= playerTrans.x1) {
         xCol = true;
-        if ((playerTrans.x1 - rbBoxTrans.x1) <= (rbBoxTrans.x0 - playerTrans.x0)) {
-            xOverlap = rbBoxTrans.x0 - playerTrans.x1;
+        if ((playerTrans.x1 - rbBox.x1) <= (rbBox.x0 - playerTrans.x0)) {
+            xOverlap = rbBox.x0 - playerTrans.x1;
         } else {
-            xOverlap = rbBoxTrans.x1 - playerTrans.x0;
+            xOverlap = rbBox.x1 - playerTrans.x0;
         }
     }
 
     bool yCol = false;
     float yOverlap = 0.0f;
-    if (rbBoxTrans.y0 <= playerTrans.y0 && playerTrans.y0 <= rbBoxTrans.y1 && rbBoxTrans.y1 <= playerTrans.y1) {
+    if (rbBox.y0 <= playerTrans.y0 && playerTrans.y0 <= rbBox.y1 && rbBox.y1 <= playerTrans.y1) {
         yCol = true;
-        yOverlap = rbBoxTrans.y1 - playerTrans.y0;
+        yOverlap = rbBox.y1 - playerTrans.y0;
     }
-    if (rbBoxTrans.y0 <= playerTrans.y0 && playerTrans.y0 <= playerTrans.y1 && playerTrans.y1 <= rbBoxTrans.y1) {
+    if (rbBox.y0 <= playerTrans.y0 && playerTrans.y0 <= playerTrans.y1 && playerTrans.y1 <= rbBox.y1) {
         yCol = true;
-        if ((rbBoxTrans.y1 - playerTrans.y1) <= (playerTrans.y0 - rbBoxTrans.y0)) {
-            yOverlap = rbBoxTrans.y1 - playerTrans.y0;
+        if ((rbBox.y1 - playerTrans.y1) <= (playerTrans.y0 - rbBox.y0)) {
+            yOverlap = rbBox.y1 - playerTrans.y0;
         } else {
-            yOverlap = rbBoxTrans.y0 - playerTrans.y1;
+            yOverlap = rbBox.y0 - playerTrans.y1;
         }
     }
-    else if(playerTrans.y0 <= rbBoxTrans.y0 && rbBoxTrans.y0 <= playerTrans.y1 && playerTrans.y1 <= rbBoxTrans.y1) {
+    else if(playerTrans.y0 <= rbBox.y0 && rbBox.y0 <= playerTrans.y1 && playerTrans.y1 <= rbBox.y1) {
         yCol = true;
-        yOverlap = -1 * (playerTrans.y1 - rbBoxTrans.y0);
+        yOverlap = -1 * (playerTrans.y1 - rbBox.y0);
     }
-    else if(playerTrans.y0 <= rbBoxTrans.y0 && rbBoxTrans.y0 <= rbBoxTrans.y1 && rbBoxTrans.y1 <= playerTrans.y1) {
+    else if(playerTrans.y0 <= rbBox.y0 && rbBox.y0 <= rbBox.y1 && rbBox.y1 <= playerTrans.y1) {
         yCol = true;
-        if ((playerTrans.y1 - rbBoxTrans.y1) <= (rbBoxTrans.y0 - playerTrans.y0)) {
-            yOverlap = rbBoxTrans.y0 - playerTrans.y1;
+        if ((playerTrans.y1 - rbBox.y1) <= (rbBox.y0 - playerTrans.y0)) {
+            yOverlap = rbBox.y0 - playerTrans.y1;
         } else {
-            yOverlap = rbBoxTrans.y1 - playerTrans.y0;
+            yOverlap = rbBox.y1 - playerTrans.y0;
         }
     }
 
     bool zCol = false;
     float zOverlap = 0.0f;
-    if (rbBoxTrans.z0 <= playerTrans.z0 && playerTrans.z0 <= rbBoxTrans.z1 && rbBoxTrans.z1 <= playerTrans.z1) {
+    if (rbBox.z0 <= playerTrans.z0 && playerTrans.z0 <= rbBox.z1 && rbBox.z1 <= playerTrans.z1) {
         zCol = true;
-        zOverlap = rbBoxTrans.z1 - playerTrans.z0;
+        zOverlap = rbBox.z1 - playerTrans.z0;
     }
-    if (rbBoxTrans.z0 <= playerTrans.z0 && playerTrans.z0 <= playerTrans.z1 && playerTrans.z1 <= rbBoxTrans.z1) {
+    if (rbBox.z0 <= playerTrans.z0 && playerTrans.z0 <= playerTrans.z1 && playerTrans.z1 <= rbBox.z1) {
         zCol = true;
-        if ((rbBoxTrans.z1 - playerTrans.z1) <= (playerTrans.z0 - rbBoxTrans.z0)) {
-            zOverlap = rbBoxTrans.z1 - playerTrans.z0;
+        if ((rbBox.z1 - playerTrans.z1) <= (playerTrans.z0 - rbBox.z0)) {
+            zOverlap = rbBox.z1 - playerTrans.z0;
         } else {
-            zOverlap = rbBoxTrans.z0 - playerTrans.z1;
+            zOverlap = rbBox.z0 - playerTrans.z1;
         }
     }
-    else if(playerTrans.z0 <= rbBoxTrans.z0 && rbBoxTrans.z0 <= playerTrans.z1 && playerTrans.z1 <= rbBoxTrans.z1) {
+    else if(playerTrans.z0 <= rbBox.z0 && rbBox.z0 <= playerTrans.z1 && playerTrans.z1 <= rbBox.z1) {
         zCol = true;
-        zOverlap = -1 * (playerTrans.z1 - rbBoxTrans.z0);
+        zOverlap = -1 * (playerTrans.z1 - rbBox.z0);
     }
-    else if(playerTrans.z0 <= rbBoxTrans.z0 && rbBoxTrans.z0 <= rbBoxTrans.z1 && rbBoxTrans.z1 <= playerTrans.z1) {
+    else if(playerTrans.z0 <= rbBox.z0 && rbBox.z0 <= rbBox.z1 && rbBox.z1 <= playerTrans.z1) {
         zCol = true;
-        if ((playerTrans.z1 - rbBoxTrans.z1) <= (rbBoxTrans.z0 - playerTrans.z0)) {
-            zOverlap = rbBoxTrans.z0 - playerTrans.z1;
+        if ((playerTrans.z1 - rbBox.z1) <= (rbBox.z0 - playerTrans.z0)) {
+            zOverlap = rbBox.z0 - playerTrans.z1;
         } else {
-            zOverlap = rbBoxTrans.z1 - playerTrans.z0;
+            zOverlap = rbBox.z1 - playerTrans.z0;
         }
     }
 

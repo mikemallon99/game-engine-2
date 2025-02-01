@@ -15,6 +15,7 @@
 #include <assimp/postprocess.h>
 
 #include "model.h"
+#include "raycast.h"
 #include "physics.h"
 #include "text.h"
 #include "menu.h"
@@ -387,8 +388,10 @@ int main() {
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // load and generate the texture
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true); // Do this to flip images upside down
@@ -484,7 +487,7 @@ int main() {
         // std::vector<bool> boxColliding;
         // for (int i=0; i < cubeMap.size(); i++) {
         //     glm::vec3 initPos = camera.Position;
-        //     camera.Position = calcCollisions(camera.Position, cubeMap[i]);
+        //     camera.Position = calcCollisionsAABB(camera.Position, cubeMap[i]);
         //     if (initPos != camera.Position) {
         //         boxColliding.push_back(true);
         //     } else {
@@ -504,8 +507,9 @@ int main() {
         // }
 
         // AABB collisions against well bounding box
-        glm::vec3 wellAABB = glm::vec3(0.0f, 0.5f, 0.0f);
-        totalMovVector = calcCollisions(camera.Position, totalMovVector, wellAABB);
+        // glm::vec3 wellAABB = glm::vec3(0.0f, 0.5f, 0.0f);
+        AABB wellBBox = well.GetBoundingBox();
+        totalMovVector = calcCollisionsAABB(camera.Position, totalMovVector, wellBBox);
 
         auto colResult = parkCol.checkCollisions(camera.Position, totalMovVector, park.model);
         glm::vec3 newMovVec = colResult.first;
@@ -522,7 +526,14 @@ int main() {
             soundMgr.play_sound(stepIdx);
             lastStepTime = currentFrame;
         }
-        
+
+        // Check if player is looking at the wellBBox
+        glm::vec3 wellMin(wellBBox.x0, wellBBox.y0, wellBBox.z0);
+        glm::vec3 wellMax(wellBBox.x1, wellBBox.y1, wellBBox.z1);
+        bool lookingAtWell = rayIntersectsAABB(camera.Position, camera.Front, wellMin, wellMax);
+        if (lookingAtWell) {
+            std::cout << lookingAtWell << std::endl;
+        }
 
         // RENDERING
         glDepthMask(GL_FALSE);
@@ -659,11 +670,9 @@ int main() {
         well.Draw(lightingShader);
 
         // This draws all our AABB boxes
-        glm::mat4 model = glm::mat4(1.0f);
         glBindVertexArray(VAO); 
-        model = glm::translate(model, wellAABB); // translate it down so it's at the center of the scene
         wireframeShader.use();
-        wireframeShader.setMat4("model", model);
+        wireframeShader.setMat4("model", wellBBox.GetCubeXform());
         wireframeShader.setMat4("projection", projection);
         wireframeShader.setMat4("view", view);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -681,6 +690,7 @@ int main() {
         // }
 
         // This should just draw a face
+        glm::mat4 model;
         lightingShader.use();
         lightingShader.setVec3("addColor", glm::vec3(0.0f, 0.0f, 0.0f));
         for (int i=0; i < stage.faceVector.size(); i++) {

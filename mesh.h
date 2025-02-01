@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "shader.h"
+#include "geom_primitives.h"
 
 #include <string>
 #include <vector>
@@ -95,6 +96,28 @@ public:
 
         // always good practice to set everything back to defaults once configured.
         glActiveTexture(GL_TEXTURE0);
+    }
+
+    AABB GetBoundingBox() {
+        float x0 = numeric_limits<float>::infinity();
+        float x1 = -1*numeric_limits<float>::infinity();
+        float y0 = numeric_limits<float>::infinity();
+        float y1 = -1*numeric_limits<float>::infinity();
+        float z0 = numeric_limits<float>::infinity();
+        float z1 = -1*numeric_limits<float>::infinity();
+
+        for (int i=0; i < vertices.size(); i++) {
+            x0 = (vertices[i].Position.x < x0) ? vertices[i].Position.x : x0;
+            x1 = (vertices[i].Position.x > x1) ? vertices[i].Position.x : x1;
+            y0 = (vertices[i].Position.y < y0) ? vertices[i].Position.y : y0;
+            y1 = (vertices[i].Position.y > y1) ? vertices[i].Position.y : y1;
+            z0 = (vertices[i].Position.z < z0) ? vertices[i].Position.z : z0;
+            z1 = (vertices[i].Position.z > z1) ? vertices[i].Position.z : z1;
+        }
+
+        return AABB{
+            x0, x1, y0, y1, z0, z1
+        };
     }
 
 private:

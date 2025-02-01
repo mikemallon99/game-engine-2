@@ -16,6 +16,7 @@
 
 #include "mesh.h"
 #include "shader.h"
+#include "geom_primitives.h"
 
 #include <string>
 #include <fstream>
@@ -37,8 +38,11 @@ public:
     bool gammaCorrection;
     glm::mat4 model;
 
+    AABB bboxCache;
+    bool bboxCacheSet = false;
+
     // constructor, expects a filepath to a 3D model.
-    Model(string const &path, bool gamma = false) : gammaCorrection(gamma)
+    Model(string const &path, bool gamma = false) : gammaCorrection(gamma), bboxCache(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f)
     {
         loadModel(path);
         model = glm::mat4(1.0f);
@@ -50,8 +54,46 @@ public:
         for(unsigned int i = 0; i < meshes.size(); i++)
             meshes[i].Draw(shader);
     }
+
+    AABB GetBoundingBox() {
+        if (!bboxCacheSet) {
+            calcBBoxCache();
+        }
+
+        glm::vec3 p0 = glm::vec3(model * glm::vec4(bboxCache.x0, bboxCache.y0, bboxCache.z0, 1.0f));
+        glm::vec3 p1 = glm::vec3(model * glm::vec4(bboxCache.x1, bboxCache.y1, bboxCache.z1, 1.0f));
+
+        return AABB(
+            p0.x, p1.x,
+            p0.y, p1.y,
+            p0.z, p1.z
+        );
+    }
     
 private:
+    void calcBBoxCache() {
+        float x0 = numeric_limits<float>::infinity();
+        float x1 = -1*numeric_limits<float>::infinity();
+        float y0 = numeric_limits<float>::infinity();
+        float y1 = -1*numeric_limits<float>::infinity();
+        float z0 = numeric_limits<float>::infinity();
+        float z1 = -1*numeric_limits<float>::infinity();
+
+        for (int i=0; i < meshes.size(); i++) {
+            AABB meshBox = meshes[i].GetBoundingBox();
+            x0 = (meshBox.x0 < x0) ? meshBox.x0 : x0;
+            x1 = (meshBox.x1 > x1) ? meshBox.x1 : x1;
+            y0 = (meshBox.y0 < y0) ? meshBox.y0 : y0;
+            y1 = (meshBox.y1 > y1) ? meshBox.y1 : y1;
+            z0 = (meshBox.z0 < z0) ? meshBox.z0 : z0;
+            z1 = (meshBox.z1 > z1) ? meshBox.z1 : z1;
+        }
+        bboxCache = AABB(
+            x0, x1, y0, y1, z0, z1
+        );
+        bboxCacheSet = true;
+    }
+    
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel(string const &path)
     {
@@ -221,7 +263,7 @@ unsigned int TextureFromFile(const char *path, const string &directory, bool gam
     unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
     if (data)
     {
-        GLenum format;
+        GLenum format = 0;
         if (nrComponents == 1)
             format = GL_RED;
         else if (nrComponents == 3)
@@ -230,12 +272,17 @@ unsigned int TextureFromFile(const char *path, const string &directory, bool gam
             format = GL_RGBA;
 
         glBindTexture(GL_TEXTURE_2D, textureID);
+        std::cout << glGetError() << std::endl; // returns 0 (no error)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        std::cout << glGetError() << std::endl; // returns 0 (no error)
+        // I think this is causing a crash
+        // width & height must be powers of 2
+        // glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         stbi_image_free(data);
