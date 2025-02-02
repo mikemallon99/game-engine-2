@@ -67,3 +67,10 @@
 - Fixed bug with drawing AABB box with proper collisions
 - more confusion about crash bug
 - came up with idea for AABB raycast and wrote function for it, need to debug
+
+2/2/25
+- can target AABB boxes and highlight them
+- added crosshair
+(for tomorrow)
+- map game width and height to global
+- continue working on object selection system

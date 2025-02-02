@@ -320,6 +320,31 @@ int main() {
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
 
+    // --- start fullscreen quad for crosshair ---
+    float quadVertices[] = {
+        // Positions
+        -1.0f,  1.0f,
+        -1.0f, -1.0f,
+        1.0f, -1.0f,
+
+        1.0f, -1.0f,
+        1.0f, 1.0f,
+        -1.0f,  1.0f,
+    };
+
+    unsigned int quadVBO, quadVAO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    // --- end fullscreen quad for crosshair ---
+
     // Generate map from string
     std::string mapString[] = {
         "xxxxxxxxxx",
@@ -350,11 +375,12 @@ int main() {
     unsigned int VBO1;
     glGenBuffers(1, &VBO1);  
 
-    Shader lightingShader("shader.vs", "shader.fs");
-    Shader lightCubeShader("shader.vs", "light.fs");
-    Shader textShader("text_shader.vs", "text_shader.fs");
-    Shader skyboxShader("skybox.vs", "skybox.fs");
-    Shader wireframeShader("wireframe.vs", "wireframe.gs", "wireframe.fs");
+    Shader lightingShader("shaders/shader.vs", "shaders/shader.fs");
+    Shader lightCubeShader("shaders/shader.vs", "shaders/light.fs");
+    Shader textShader("shaders/text_shader.vs", "shaders/text_shader.fs");
+    Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
+    Shader wireframeShader("shaders/wireframe.vs", "shaders/wireframe.gs", "shaders/wireframe.fs");
+    Shader crosshairShader("shaders/crosshair.vs", "shaders/crosshair.fs");
     // Shader ourShader("model_loading.vs", "model_loading.fs");
 
     unsigned int VAO;
@@ -531,9 +557,6 @@ int main() {
         glm::vec3 wellMin(wellBBox.x0, wellBBox.y0, wellBBox.z0);
         glm::vec3 wellMax(wellBBox.x1, wellBBox.y1, wellBBox.z1);
         bool lookingAtWell = rayIntersectsAABB(camera.Position, camera.Front, wellMin, wellMax);
-        if (lookingAtWell) {
-            std::cout << lookingAtWell << std::endl;
-        }
 
         // RENDERING
         glDepthMask(GL_FALSE);
@@ -672,6 +695,11 @@ int main() {
         // This draws all our AABB boxes
         glBindVertexArray(VAO); 
         wireframeShader.use();
+        glm::vec3 wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
+        if (lookingAtWell) {
+            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
+        }
+        wireframeShader.setVec3("wireframeColor", wellWireColor);
         wireframeShader.setMat4("model", wellBBox.GetCubeXform());
         wireframeShader.setMat4("projection", projection);
         wireframeShader.setMat4("view", view);
@@ -730,6 +758,15 @@ int main() {
         }
 
         debugMenu.Draw(textShader);
+
+        glDepthMask(GL_FALSE);
+        crosshairShader.use();
+        crosshairShader.setVec3("crosshairColor", glm::vec3(1.0f, 1.0f, 1.0f));
+        crosshairShader.setFloat("lineThickness", 0.001f);
+        glBindVertexArray(quadVAO); 
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0); 
+        glDepthMask(GL_TRUE);
         
         glfwSwapBuffers(window);
         glfwPollEvents();    
