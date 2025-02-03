@@ -120,3 +120,6 @@ object selection system:
 - fragment shader which outlines the currently selected object in orange
 - function that casts a ray to select a model on the currently selected object
 
+object modal system:
+- put an AABB box around each gizmo axis
+- if a bbox is selected and user presses down on mouse, then project their mouse movements onto that axis

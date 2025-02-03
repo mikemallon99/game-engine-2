@@ -60,14 +60,7 @@ public:
             calcBBoxCache();
         }
 
-        glm::vec3 p0 = glm::vec3(model * glm::vec4(bboxCache.x0, bboxCache.y0, bboxCache.z0, 1.0f));
-        glm::vec3 p1 = glm::vec3(model * glm::vec4(bboxCache.x1, bboxCache.y1, bboxCache.z1, 1.0f));
-
-        return AABB(
-            p0.x, p1.x,
-            p0.y, p1.y,
-            p0.z, p1.z
-        );
+        return bboxCache.Transform(model);
     }
     
 private:
