@@ -270,7 +270,7 @@ public:
     // DebugMenu();
     ~DebugMenu();
     void Draw(Shader s);
-    void ProcessKeyboard(GLFWwindow *window);
+    void ProcessKeyboard();
     void Setup(Stage* stage_in, glm::vec3* playerPosPtr);
 
 private:
@@ -324,7 +324,7 @@ void DebugMenu::Draw(Shader s) {
     menuNodeStack.back()->Draw(s);
 }
 
-void DebugMenu::ProcessKeyboard(GLFWwindow *window)
+void DebugMenu::ProcessKeyboard()
 {
     if (kbd.checkKey(GLFW_KEY_UP)) {
         // Go up on current menu node

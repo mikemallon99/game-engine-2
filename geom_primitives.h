@@ -35,18 +35,23 @@ public:
         );
     }
 
-    AABB Translate(glm::mat4 model) {
-        glm::mat4 transMat = glm::mat4(1.0f); // Identity matrix
-        transMat[3] = model[3]; // Copy only the translation column
-
-        glm::vec3 p0 = glm::vec3(transMat * glm::vec4(this->x0, this->y0, this->z0, 1.0f));
-        glm::vec3 p1 = glm::vec3(transMat * glm::vec4(this->x1, this->y1, this->z1, 1.0f));
+    AABB Translate(glm::vec3 translate) {
+        glm::vec3 p0 = translate + glm::vec3(this->x0, this->y0, this->z0);
+        glm::vec3 p1 = translate + glm::vec3(this->x1, this->y1, this->z1);
 
         return AABB(
             p0.x, p1.x,
             p0.y, p1.y,
             p0.z, p1.z
         );
+    }
+
+    glm::vec3 GetMin() {
+        return glm::vec3(this->x0, this->y0, this->z0);
+    }
+
+    glm::vec3 GetMax() {
+        return glm::vec3(this->x1, this->y1, this->z1);
     }
 
     // Should make function here for getting xform matrix for cube vertices

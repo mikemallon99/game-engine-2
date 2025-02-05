@@ -48,6 +48,7 @@ Camera camera(cameraPos);
 Stage stage;
 DebugMenu debugMenu;
 KeyboardDebouncer kbd;
+MoveGizmo moveGizmo;
 
 float lastX = 400, lastY = 400;
 float fov = 45.0;
@@ -220,7 +221,8 @@ void processInput(GLFWwindow *window)
         yVelocity = 0.05f;
     }
 
-    debugMenu.ProcessKeyboard(window);
+    debugMenu.ProcessKeyboard();
+    moveGizmo.ProcessKeyboard(window);
 }
 
 glm::mat4 makeLookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
@@ -470,20 +472,24 @@ int main() {
 
     // Model backpack("models/backpack/backpack.obj");
     Model sword("models/sword.obj");
-    sword.model = glm::translate(sword.model, glm::vec3(6.0f, 1.0f, 6.0f)); // translate it down so it's at the center of the scene
-    sword.model = glm::scale(sword.model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+    sword.origin = glm::vec3(6.0f, 1.0f, 6.0f); 
+    sword.scale = glm::vec3(1.0f, 1.0f, 1.0f);	
 
     Model well("models/well.obj");
-    well.model = glm::translate(well.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-    well.model = glm::scale(well.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
+    well.origin = glm::vec3(0.0f, 0.0f, 0.0f); 
+    well.scale = glm::vec3(0.5f, 0.5f, 0.5f);	
+    // gizmo setup
+    moveGizmo.childOrigin = &(well.origin);
+    moveGizmo.camera = &camera;
+    moveGizmo.SetTranslationXform(well.origin);
 
     Model room("models/room.obj");
-    room.model = glm::translate(room.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-    room.model = glm::scale(room.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
+    room.origin = glm::vec3(0.0f, 0.0f, 0.0f);
+    room.scale = glm::vec3(0.5f, 0.5f, 0.5f);	
 
     Model park("models/park.obj");
-    park.model = glm::translate(park.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-    park.model = glm::scale(park.model, glm::vec3(0.5f, 0.5f, 0.5f));	// it's a bit too big for our scene, so scale it down
+    park.origin = glm::vec3(0.0f, 0.0f, 0.0f);
+    park.scale = glm::vec3(0.5f, 0.5f, 0.5f);	
 
     // Model cubeModel("models/cube.obj");
     // park.model = glm::translate(park.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
@@ -559,7 +565,7 @@ int main() {
         AABB wellBBox = well.GetBoundingBox();
         totalMovVector = calcCollisionsAABB(camera.Position, totalMovVector, wellBBox);
 
-        auto colResult = parkCol.checkCollisions(camera.Position, totalMovVector, park.model);
+        auto colResult = parkCol.checkCollisions(camera.Position, totalMovVector, park.GetModelMatrix());
         glm::vec3 newMovVec = colResult.first;
         bool hitFloor = colResult.second;
         camera.Position += newMovVec;
@@ -579,12 +585,6 @@ int main() {
         glm::vec3 wellMin(wellBBox.x0, wellBBox.y0, wellBBox.z0);
         glm::vec3 wellMax(wellBBox.x1, wellBBox.y1, wellBBox.z1);
         bool lookingAtWell = rayIntersectsAABB(camera.Position, camera.Front, wellMin, wellMax);
-
-        // Check gizmo axes on wellbox
-        AABB wellXAxisBox = getXAxisBBox().Translate(well.model);
-        bool wellHitXBox = rayIntersectsAABB(camera.Position, camera.Front, wellMin, wellMax);
-        AABB wellYAxisBox = getYAxisBBox().Translate(well.model);
-        AABB wellZAxisBox = getZAxisBBox().Translate(well.model);
 
         // RENDERING
         glDepthMask(GL_FALSE);
@@ -713,11 +713,11 @@ int main() {
         glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"), 1);
 
         // render the sword
-        lightingShader.setMat4("model", sword.model);
+        lightingShader.setMat4("model", sword.GetModelMatrix());
         sword.Draw(lightingShader);
 
         // render the well
-        lightingShader.setMat4("model", well.model);
+        lightingShader.setMat4("model", well.GetModelMatrix());
         well.Draw(lightingShader);
 
         // This draws all our AABB boxes
@@ -729,6 +729,44 @@ int main() {
         }
         wireframeShader.setVec3("wireframeColor", wellWireColor);
         wireframeShader.setMat4("model", wellBBox.GetCubeXform());
+        wireframeShader.setMat4("projection", projection);
+        wireframeShader.setMat4("view", view);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // WELL MOVE GIZMO STUFF
+        moveGizmo.Update();
+        glBindVertexArray(VAO); 
+        wireframeShader.use();
+        wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
+        if (moveGizmo.hoverXBox) {
+            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
+        }
+        wireframeShader.setVec3("wireframeColor", wellWireColor);
+        wireframeShader.setMat4("model", moveGizmo.xAxisBBox.GetCubeXform());
+        wireframeShader.setMat4("projection", projection);
+        wireframeShader.setMat4("view", view);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glBindVertexArray(VAO); 
+        wireframeShader.use();
+        wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
+        if (moveGizmo.hoverYBox) {
+            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
+        }
+        wireframeShader.setVec3("wireframeColor", wellWireColor);
+        wireframeShader.setMat4("model", moveGizmo.yAxisBBox.GetCubeXform());
+        wireframeShader.setMat4("projection", projection);
+        wireframeShader.setMat4("view", view);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glBindVertexArray(VAO); 
+        wireframeShader.use();
+        wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
+        if (moveGizmo.hoverZBox) {
+            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
+        }
+        wireframeShader.setVec3("wireframeColor", wellWireColor);
+        wireframeShader.setMat4("model", moveGizmo.zAxisBBox.GetCubeXform());
         wireframeShader.setMat4("projection", projection);
         wireframeShader.setMat4("view", view);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -768,7 +806,7 @@ int main() {
         // -- end section involving texture select --
 
         // park stuff
-        lightingShader.setMat4("model", park.model);
+        lightingShader.setMat4("model", park.GetModelMatrix());
         park.Draw(lightingShader);
 
         // also draw the lamp object(s)
@@ -793,7 +831,10 @@ int main() {
         glDisable(GL_DEPTH_TEST);
         glBindVertexArray(originVAO); 
         gizmoShader.use();
-        gizmoShader.setMat4("model", well.model);
+        // Dont scale & rotate the gizmo, just get the translate
+        glm::mat4 gizmoMat = glm::mat4(1.0f); // Identity matrix
+        gizmoMat = glm::translate(gizmoMat, well.origin); // Copy only the translation column
+        gizmoShader.setMat4("model", gizmoMat);
         gizmoShader.setMat4("projection", projection);
         gizmoShader.setMat4("view", view);
         glPointSize(10.0f);

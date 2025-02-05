@@ -74,3 +74,17 @@
 (for tomorrow)
 - map game width and height to global
 - continue working on object selection system
+
+2/3/25
+- made gizmo shader and started dev on gizmo bboxes
+
+2/4/25
+- prototype for gizmo move system
+(for tomorrow)
+- need to finish prototype and test on x axis
+
+2/5/25
+- got move gizmo working
+(for tomorrow)
+- fix well bbox scaling
+- make stage system that holds models which can all be selected

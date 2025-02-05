@@ -36,7 +36,8 @@ public:
     vector<Mesh>    meshes;
     string directory;
     bool gammaCorrection;
-    glm::mat4 model;
+    glm::vec3 origin;
+    glm::vec3 scale;
 
     AABB bboxCache;
     bool bboxCacheSet = false;
@@ -45,7 +46,7 @@ public:
     Model(string const &path, bool gamma = false) : gammaCorrection(gamma), bboxCache(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f)
     {
         loadModel(path);
-        model = glm::mat4(1.0f);
+        origin = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
     // draws the model, and thus all its meshes
@@ -60,7 +61,14 @@ public:
             calcBBoxCache();
         }
 
-        return bboxCache.Transform(model);
+        return bboxCache.Translate(origin);
+    }
+
+    glm::mat4 GetModelMatrix() {
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, origin);
+        model = glm::scale(model, scale);
+        return model;
     }
     
 private:
