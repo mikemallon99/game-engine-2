@@ -88,3 +88,8 @@
 (for tomorrow)
 - fix well bbox scaling
 - make stage system that holds models which can all be selected
+
+2/6/25
+- wrote a bunch of code for new stage system
+(for tomorrow)
+- stage system with selection and gizmo movement is super buggy, need to fix it

@@ -13,6 +13,9 @@ enum Camera_Movement {
     RIGHT
 };
 
+int SCREEN_WIDTH = 1200;
+int SCREEN_HEIGHT = 800;
+
 // Default camera values
 const float YAW         = -90.0f;
 const float PITCH       =  0.0f;

@@ -27,10 +27,6 @@
 #include "gizmo.h"
 
 
-int SCREEN_WIDTH = 1200;
-int SCREEN_HEIGHT = 800;
-
-
 // MOVE: used for text studd
 float mixValue;
 float deltaTime = 0.0f;	// Time between current frame and last frame
@@ -45,10 +41,9 @@ int fartIdx;
 int stepIdx;
 
 Camera camera(cameraPos);
-Stage stage;
+Stage* stage;
 DebugMenu debugMenu;
 KeyboardDebouncer kbd;
-MoveGizmo moveGizmo;
 
 float lastX = 400, lastY = 400;
 float fov = 45.0;
@@ -222,7 +217,7 @@ void processInput(GLFWwindow *window)
     }
 
     debugMenu.ProcessKeyboard();
-    moveGizmo.ProcessKeyboard(window);
+    stage->ProcessKeyboard(window);
 }
 
 glm::mat4 makeLookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
@@ -327,21 +322,6 @@ int main() {
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
 
-    float originVertex[] = {
-        0.0f, 0.0f, 0.0f
-    };
-    unsigned int originVBO, originVAO;
-    glGenVertexArrays(1, &originVAO);
-    glGenBuffers(1, &originVBO);
-    glBindVertexArray(originVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, originVAO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(originVertex), originVertex, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
 
     // --- start fullscreen quad for crosshair ---
     float quadVertices[] = {
@@ -403,7 +383,6 @@ int main() {
     Shader textShader("shaders/text_shader.vs", "shaders/text_shader.fs");
     Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
     Shader wireframeShader("shaders/wireframe.vs", "shaders/wireframe.gs", "shaders/wireframe.fs");
-    Shader gizmoShader("shaders/movegizmo.vs", "shaders/movegizmo.gs", "shaders/movegizmo.fs");
     Shader crosshairShader("shaders/crosshair.vs", "shaders/crosshair.fs");
     // Shader ourShader("model_loading.vs", "model_loading.fs");
 
@@ -478,10 +457,6 @@ int main() {
     Model well("models/well.obj");
     well.origin = glm::vec3(0.0f, 0.0f, 0.0f); 
     well.scale = glm::vec3(0.5f, 0.5f, 0.5f);	
-    // gizmo setup
-    moveGizmo.childOrigin = &(well.origin);
-    moveGizmo.camera = &camera;
-    moveGizmo.SetTranslationXform(well.origin);
 
     Model room("models/room.obj");
     room.origin = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -500,8 +475,13 @@ int main() {
 
     loadTextStuff();
 
-    stage.init();
-    debugMenu.Setup(&stage, &(camera.Position));
+    stage = new Stage();
+    stage->init(&camera);
+    stage->AddModel(&sword);
+    stage->AddModel(&well);
+    // stage->AddModel(&room);
+    stage->AddModel(&park);
+    debugMenu.Setup(stage, &(camera.Position));
 
     kbdMgr.registerKeyboard(&kbd);
 
@@ -581,10 +561,7 @@ int main() {
             lastStepTime = currentFrame;
         }
 
-        // Check if player is looking at the wellBBox
-        glm::vec3 wellMin(wellBBox.x0, wellBBox.y0, wellBBox.z0);
-        glm::vec3 wellMax(wellBBox.x1, wellBBox.y1, wellBBox.z1);
-        bool lookingAtWell = rayIntersectsAABB(camera.Position, camera.Front, wellMin, wellMax);
+        stage->Update();
 
         // RENDERING
         glDepthMask(GL_FALSE);
@@ -668,6 +645,9 @@ int main() {
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
 
+        wireframeShader.setMat4("projection", projection);
+        wireframeShader.setMat4("view", view);
+
         // render the loaded model
         // model = glm::mat4(1.0f);
         // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
@@ -712,65 +692,7 @@ int main() {
         }
         glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"), 1);
 
-        // render the sword
-        lightingShader.setMat4("model", sword.GetModelMatrix());
-        sword.Draw(lightingShader);
-
-        // render the well
-        lightingShader.setMat4("model", well.GetModelMatrix());
-        well.Draw(lightingShader);
-
         // This draws all our AABB boxes
-        glBindVertexArray(VAO); 
-        wireframeShader.use();
-        glm::vec3 wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
-        if (lookingAtWell) {
-            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
-        }
-        wireframeShader.setVec3("wireframeColor", wellWireColor);
-        wireframeShader.setMat4("model", wellBBox.GetCubeXform());
-        wireframeShader.setMat4("projection", projection);
-        wireframeShader.setMat4("view", view);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        // WELL MOVE GIZMO STUFF
-        moveGizmo.Update();
-        glBindVertexArray(VAO); 
-        wireframeShader.use();
-        wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
-        if (moveGizmo.hoverXBox) {
-            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
-        }
-        wireframeShader.setVec3("wireframeColor", wellWireColor);
-        wireframeShader.setMat4("model", moveGizmo.xAxisBBox.GetCubeXform());
-        wireframeShader.setMat4("projection", projection);
-        wireframeShader.setMat4("view", view);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        glBindVertexArray(VAO); 
-        wireframeShader.use();
-        wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
-        if (moveGizmo.hoverYBox) {
-            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
-        }
-        wireframeShader.setVec3("wireframeColor", wellWireColor);
-        wireframeShader.setMat4("model", moveGizmo.yAxisBBox.GetCubeXform());
-        wireframeShader.setMat4("projection", projection);
-        wireframeShader.setMat4("view", view);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        glBindVertexArray(VAO); 
-        wireframeShader.use();
-        wellWireColor = glm::vec3(1.0f, 0.0f, 0.0f);
-        if (moveGizmo.hoverZBox) {
-            wellWireColor = glm::vec3(1.0f, 1.0f, 0.0f);
-        }
-        wireframeShader.setVec3("wireframeColor", wellWireColor);
-        wireframeShader.setMat4("model", moveGizmo.zAxisBBox.GetCubeXform());
-        wireframeShader.setMat4("projection", projection);
-        wireframeShader.setMat4("view", view);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
         // for (int i=0; i < cubeMap.size(); i++) {
         //     model = glm::mat4(1.0f);
         //     model = glm::translate(model, cubeMap[i]); // translate it down so it's at the center of the scene
@@ -789,12 +711,12 @@ int main() {
         glBindVertexArray(VAO); 
         lightingShader.use();
         lightingShader.setVec3("addColor", glm::vec3(0.0f, 0.0f, 0.0f));
-        for (int i=0; i < stage.faceVector.size(); i++) {
+        for (int i=0; i < stage->faceVector.size(); i++) {
             model = glm::mat4(1.0f);
-            model = glm::translate(model, stage.faceVector[i]->translate); 
-            model = glm::scale(model, stage.faceVector[i]->scale); 
+            model = glm::translate(model, stage->faceVector[i]->translate); 
+            model = glm::scale(model, stage->faceVector[i]->scale); 
             lightingShader.setMat4("model", model);
-            stage.faceVector[i]->Draw();
+            stage->faceVector[i]->Draw();
         }
 
         // Unbind texture stuff
@@ -805,9 +727,8 @@ int main() {
 
         // -- end section involving texture select --
 
-        // park stuff
-        lightingShader.setMat4("model", park.GetModelMatrix());
-        park.Draw(lightingShader);
+        // Draw all models and bboxes on the stage
+        stage->Draw(lightingShader, wireframeShader);
 
         // also draw the lamp object(s)
         lightCubeShader.use();
@@ -825,21 +746,9 @@ int main() {
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        debugMenu.Draw(textShader);
-
-        // this draws the gizmo
+        // Crosshair drawing
+        
         glDisable(GL_DEPTH_TEST);
-        glBindVertexArray(originVAO); 
-        gizmoShader.use();
-        // Dont scale & rotate the gizmo, just get the translate
-        glm::mat4 gizmoMat = glm::mat4(1.0f); // Identity matrix
-        gizmoMat = glm::translate(gizmoMat, well.origin); // Copy only the translation column
-        gizmoShader.setMat4("model", gizmoMat);
-        gizmoShader.setMat4("projection", projection);
-        gizmoShader.setMat4("view", view);
-        glPointSize(10.0f);
-        glDrawArrays(GL_POINTS, 0, 1);
-
         glDepthMask(GL_FALSE);
         crosshairShader.use();
         crosshairShader.setVec3("crosshairColor", glm::vec3(1.0f, 1.0f, 1.0f));
@@ -849,7 +758,9 @@ int main() {
         glBindVertexArray(0); 
         glDepthMask(GL_TRUE);
         glEnable(GL_DEPTH_TEST);
-        
+
+        debugMenu.Draw(textShader);
+
         glfwSwapBuffers(window);
         glfwPollEvents();    
     }

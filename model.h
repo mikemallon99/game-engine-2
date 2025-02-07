@@ -47,6 +47,7 @@ public:
     {
         loadModel(path);
         origin = glm::vec3(0.0f, 0.0f, 0.0f);
+        scale = glm::vec3(1.0f, 1.0f, 1.0f);
     }
 
     // draws the model, and thus all its meshes
@@ -61,7 +62,7 @@ public:
             calcBBoxCache();
         }
 
-        return bboxCache.Translate(origin);
+        return bboxCache.Transform(this->GetModelMatrix());
     }
 
     glm::mat4 GetModelMatrix() {

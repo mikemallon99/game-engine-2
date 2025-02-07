@@ -3,13 +3,14 @@
 
 #include "geom_primitives.h"
 #include "camera.h"
+#include "shader.h"
 // #include "keyboard.h"
 
 float BOX_RADIUS = 0.1;
 
 class MoveGizmo {
 public:
-    bool active;
+    bool active = false;
     glm::vec3 gizmoOrigin;
     glm::vec3* childOrigin;
     AABB xAxisBBox = AABB(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -19,11 +20,43 @@ public:
     bool hoverYBox;
     bool hoverZBox;
     Camera* camera;
+    Shader gizmoShader;
+    unsigned int originVBO, originVAO;
 
-    // MoveGizmo(Camera& camera, glm::vec3& childOrigin)
-    //     : camera(camera), childOrigin(childOrigin), gizmoOrigin(childOrigin) {
-    //     ResetBoxes();
-    // }
+    MoveGizmo() : gizmoShader("shaders/movegizmo.vs", "shaders/movegizmo.gs", "shaders/movegizmo.fs") {
+        float originVertex[] = {
+            0.0f, 0.0f, 0.0f
+        };
+        glGenVertexArrays(1, &originVAO);
+        glGenBuffers(1, &originVBO);
+        glBindVertexArray(originVAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, originVAO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(originVertex), originVertex, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+    void Draw() {
+        glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera->GetViewMatrix();
+
+        // this draws the gizmo
+        glDisable(GL_DEPTH_TEST);
+        glBindVertexArray(originVAO); 
+        gizmoShader.use();
+        // Dont scale & rotate the gizmo, just get the translate
+        glm::mat4 gizmoMat = glm::mat4(1.0f); // Identity matrix
+        gizmoMat = glm::translate(gizmoMat, gizmoOrigin); // Copy only the translation column
+        gizmoShader.setMat4("model", gizmoMat);
+        gizmoShader.setMat4("projection", projection);
+        gizmoShader.setMat4("view", view);
+        glPointSize(10.0f);
+        glDrawArrays(GL_POINTS, 0, 1);
+        glEnable(GL_DEPTH_TEST);
+    }
 
     void SetTranslationXform(glm::vec3 translate) {
         ResetBoxes();
