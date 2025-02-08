@@ -101,6 +101,8 @@ public:
     void Update() {
         ProcessCollisions();
         if (selXBox || selYBox || selZBox) {
+            // This method will translate the origin based off the projection of the cameras ray onto the selected axis
+            // A better method might be to transform the thing based off the delta of the cameras angle
             *childOrigin = gizmoOrigin + calcTransVec();
         }
     }

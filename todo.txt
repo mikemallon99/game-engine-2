@@ -123,3 +123,20 @@ object selection system:
 object modal system:
 - put an AABB box around each gizmo axis
 - if a bbox is selected and user presses down on mouse, then project their mouse movements onto that axis
+
+selection:
+- need to make it so you can only select one thing at a time. should be the first thing that is intersected
+- make it so that if you intersect the ray behind you, then it doesnt select anything
+- if you dont select another bounding box, but say you selected the gizmo thats owned by the bounding box, then it doesnt deselect anything
+    - groups? bbox is the parent, gizmo is a child
+- need to improve the equation for translating an object along the gizmo
+
+next directions to take:
+- add in animations
+    - character model onto stage
+    - rigging
+    - play animation
+- save edits to stage
+    - serialize the stage to a file
+        - USD?
+- swap out bbox selection with object orange outline

@@ -14,7 +14,7 @@ bool rayIntersectsAABB(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxMin, 
     t = (boxMin.z - rayOrigin.z) / rayDir.z;
     x_i = rayOrigin.x + rayDir.x * t;
     y_i = rayOrigin.y + rayDir.y * t;
-    if (boxMin.x <= x_i && x_i <= boxMax.x && boxMin.y <= y_i && y_i <= boxMax.y) {
+    if (t >= 0.0f && boxMin.x <= x_i && x_i <= boxMax.x && boxMin.y <= y_i && y_i <= boxMax.y) {
         return true;
     }
 
@@ -22,7 +22,7 @@ bool rayIntersectsAABB(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxMin, 
     t = (boxMax.z - rayOrigin.z) / rayDir.z;
     x_i = rayOrigin.x + rayDir.x * t;
     y_i = rayOrigin.y + rayDir.y * t;
-    if (boxMin.x <= x_i && x_i <= boxMax.x && boxMin.y <= y_i && y_i <= boxMax.y) {
+    if (t >= 0.0f && boxMin.x <= x_i && x_i <= boxMax.x && boxMin.y <= y_i && y_i <= boxMax.y) {
         return true;
     }
 
@@ -30,7 +30,7 @@ bool rayIntersectsAABB(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxMin, 
     t = (boxMin.y - rayOrigin.y) / rayDir.y;
     x_i = rayOrigin.x + rayDir.x * t;
     z_i = rayOrigin.z + rayDir.z * t;
-    if (boxMin.x <= x_i && x_i <= boxMax.x && boxMin.z <= z_i && z_i <= boxMax.z) {
+    if (t >= 0.0f && boxMin.x <= x_i && x_i <= boxMax.x && boxMin.z <= z_i && z_i <= boxMax.z) {
         return true;
     }
 
@@ -38,7 +38,7 @@ bool rayIntersectsAABB(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxMin, 
     t = (boxMax.y - rayOrigin.y) / rayDir.y;
     x_i = rayOrigin.x + rayDir.x * t;
     z_i = rayOrigin.z + rayDir.z * t;
-    if (boxMin.x <= x_i && x_i <= boxMax.x && boxMin.z <= z_i && z_i <= boxMax.z) {
+    if (t >= 0.0f && boxMin.x <= x_i && x_i <= boxMax.x && boxMin.z <= z_i && z_i <= boxMax.z) {
         return true;
     }
 
@@ -46,7 +46,7 @@ bool rayIntersectsAABB(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxMin, 
     t = (boxMin.x - rayOrigin.x) / rayDir.x;
     y_i = rayOrigin.y + rayDir.y * t;
     z_i = rayOrigin.z + rayDir.z * t;
-    if (boxMin.z <= z_i && z_i <= boxMax.z && boxMin.y <= y_i && y_i <= boxMax.y) {
+    if (t >= 0.0f && boxMin.z <= z_i && z_i <= boxMax.z && boxMin.y <= y_i && y_i <= boxMax.y) {
         return true;
     }
 
@@ -54,7 +54,7 @@ bool rayIntersectsAABB(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxMin, 
     t = (boxMax.x - rayOrigin.x) / rayDir.x;
     y_i = rayOrigin.y + rayDir.y * t;
     z_i = rayOrigin.z + rayDir.z * t;
-    if (boxMin.z <= z_i && z_i <= boxMax.z && boxMin.y <= y_i && y_i <= boxMax.y) {
+    if (t >= 0.0f && boxMin.z <= z_i && z_i <= boxMax.z && boxMin.y <= y_i && y_i <= boxMax.y) {
         return true;
     }
 

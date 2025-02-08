@@ -11,6 +11,7 @@
 #include "model.h"
 #include "camera.h"
 #include "gizmo.h"
+#include "cube.h"
 
 class Stage {
 public:
@@ -51,6 +52,7 @@ void Stage::Draw(Shader modelShader, Shader wireShader) {
         stageModels[i]->Draw(modelShader);
 
         wireShader.use();
+        glBindVertexArray(cubeVAO); 
         glm::vec3 bboxColor = glm::vec3(1.0f, 0.0f, 0.0f);
         if (modelHoverStatus[i]) {
             bboxColor = glm::vec3(1.0f, 1.0f, 0.0f);
@@ -97,25 +99,34 @@ void Stage::ProcessKeyboard(GLFWwindow *window) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !mouseDown) {
         mouseDown = true;
 
-        selectedModel = -1;
-        for (int i=0; i < stageModels.size(); i++) {
-            if (modelHoverStatus[i]) {
-                selectedModel = i;
-                // Once a model is selected, add a gizmo to it
-                // gizmo setup
-                moveGizmo.childOrigin = &(stageModels[i]->origin);
-                moveGizmo.SetTranslationXform(stageModels[i]->origin);
-                moveGizmo.active = true;
-                break;
-            }
+        // Eventually we will have to swap this out for some kind of grouping system
+        if (moveGizmo.hoverXBox || moveGizmo.hoverYBox || moveGizmo.hoverZBox) {
+            // Do nothin
         }
-        // If model is deselected, deactivate the gizmo
-        if (selectedModel == -1) {
-            moveGizmo.active = false;
+        else {
+            selectedModel = -1;
+            for (int i=0; i < stageModels.size(); i++) {
+                if (modelHoverStatus[i]) {
+                    selectedModel = i;
+                    // Once a model is selected, add a gizmo to it
+                    // gizmo setup
+                    moveGizmo.childOrigin = &(stageModels[i]->origin);
+                    moveGizmo.SetTranslationXform(stageModels[i]->origin);
+                    moveGizmo.active = true;
+                    break;
+                }
+            }
+            // If model is deselected, deactivate the gizmo
+            if (selectedModel == -1) {
+                moveGizmo.active = false;
+            }
         }
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE && mouseDown) {
         mouseDown = false;
+        if (selectedModel != -1) {
+            modelBBoxes[selectedModel] = stageModels[selectedModel]->GetBoundingBox();
+        }
     }
 
     if (moveGizmo.active) {

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="collisions.h" />
+    <ClInclude Include="cube.h" />
     <ClInclude Include="face.h" />
     <ClInclude Include="geom_primitives.h" />
     <ClInclude Include="gizmo.h" />

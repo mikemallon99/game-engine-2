@@ -25,6 +25,7 @@
 #include "collisions.h"
 #include "sound.h"
 #include "gizmo.h"
+#include "cube.h"
 
 
 // MOVE: used for text studd
@@ -276,53 +277,6 @@ int main() {
     glfwSetCursorPosCallback(window, mouse_callback);  
     glfwSetScrollCallback(window, scroll_callback); 
 
-
-    float verticesCube[] = {
-        // positions          // normals           // texture coords
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-    };
-
-
     // --- start fullscreen quad for crosshair ---
     float quadVertices[] = {
         // Positions
@@ -347,6 +301,9 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     // --- end fullscreen quad for crosshair ---
+
+    // Loads VAO/VBO in cube.h
+    initCube();
 
     // Generate map from string
     std::string mapString[] = {
@@ -375,9 +332,6 @@ int main() {
         }
     }
 
-    unsigned int VBO1;
-    glGenBuffers(1, &VBO1);  
-
     Shader lightingShader("shaders/shader.vs", "shaders/shader.fs");
     Shader lightCubeShader("shaders/shader.vs", "shaders/light.fs");
     Shader textShader("shaders/text_shader.vs", "shaders/text_shader.fs");
@@ -386,29 +340,12 @@ int main() {
     Shader crosshairShader("shaders/crosshair.vs", "shaders/crosshair.fs");
     // Shader ourShader("model_loading.vs", "model_loading.fs");
 
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO);  
-    // ..:: Initialization code (done once (unless your object frequently changes)) :: ..
-    // 1. bind Vertex Array Object
-    glBindVertexArray(VAO);
-    // 2. copy our vertices array in a buffer for OpenGL to use
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesCube), verticesCube, GL_STATIC_DRAW);
-
-    // 3. then set our vertex attributes pointers
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);  
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);  
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);  
-
     // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
     unsigned int lightCubeVAO;
     glGenVertexArrays(1, &lightCubeVAO);
     glBindVertexArray(lightCubeVAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     // note that we update the lamp's position attribute's stride to reflect the updated buffer data
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -571,7 +508,7 @@ int main() {
         skyboxShader.setMat4("view", viewSkybox);
         glUniform1i(glGetUniformLocation(skyboxShader.ID, "skybox"), 0);
 
-        glBindVertexArray(VAO); 
+        glBindVertexArray(cubeVAO); 
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
@@ -645,6 +582,7 @@ int main() {
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
 
+        wireframeShader.use();
         wireframeShader.setMat4("projection", projection);
         wireframeShader.setMat4("view", view);
 
@@ -692,6 +630,10 @@ int main() {
         }
         glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"), 1);
 
+        // Draw all models and bboxes on the stage
+        // Need to make sure this is done before we unbind the textures
+        stage->Draw(lightingShader, wireframeShader);
+
         // This draws all our AABB boxes
         // for (int i=0; i < cubeMap.size(); i++) {
         //     model = glm::mat4(1.0f);
@@ -708,7 +650,7 @@ int main() {
 
         // This should just draw a face
         glm::mat4 model;
-        glBindVertexArray(VAO); 
+        glBindVertexArray(cubeVAO); 
         lightingShader.use();
         lightingShader.setVec3("addColor", glm::vec3(0.0f, 0.0f, 0.0f));
         for (int i=0; i < stage->faceVector.size(); i++) {
@@ -726,9 +668,6 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, 0); 
 
         // -- end section involving texture select --
-
-        // Draw all models and bboxes on the stage
-        stage->Draw(lightingShader, wireframeShader);
 
         // also draw the lamp object(s)
         lightCubeShader.use();

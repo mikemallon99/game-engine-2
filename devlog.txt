@@ -90,6 +90,19 @@
 - make stage system that holds models which can all be selected
 
 2/6/25
+(no work today, coffee w drew)
+
+2/7/25
 - wrote a bunch of code for new stage system
 (for tomorrow)
 - stage system with selection and gizmo movement is super buggy, need to fix it
+    - textures missing
+    - gizmo selection is weird
+    - BBoxes not rendering
+    - gizmos disappear after a while
+
+2/7/25
+- fixed textures, gizmo selection, bboxes rendering
+- started reading on object outlining
+(for tomorrow)
+- get stencil testing put in and have at least one object outlined 
