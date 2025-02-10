@@ -101,8 +101,15 @@
     - BBoxes not rendering
     - gizmos disappear after a while
 
-2/7/25
+2/8/25
 - fixed textures, gizmo selection, bboxes rendering
 - started reading on object outlining
 (for tomorrow)
 - get stencil testing put in and have at least one object outlined 
+
+2/9/25
+- got stenciling in
+(for tomorrow)
+- need a way to load in a mesh with smoothed normals
+- different color outlines
+- outline on select

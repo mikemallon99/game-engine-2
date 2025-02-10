@@ -30,7 +30,7 @@ public:
 
     void init(Camera* camera);
     void AddModel(Model* model);
-    void Draw(Shader modelShader, Shader wireShader);
+    void Draw(Shader& modelShader, Shader& wireShader, Shader& outlineShader);
     void ProcessKeyboard(GLFWwindow *window);
     void Update();
 
@@ -45,21 +45,25 @@ Stage::Stage() {
     selectedModel = -1;
 }
 
-void Stage::Draw(Shader modelShader, Shader wireShader) {
+void Stage::Draw(Shader& modelShader, Shader& wireShader, Shader& outlineShader) {
     for (int i=0; i < stageModels.size(); i++) {
         modelShader.use();
-        modelShader.setMat4("model", stageModels[i]->GetModelMatrix());
-        stageModels[i]->Draw(modelShader);
-
-        wireShader.use();
-        glBindVertexArray(cubeVAO); 
-        glm::vec3 bboxColor = glm::vec3(1.0f, 0.0f, 0.0f);
-        if (modelHoverStatus[i]) {
-            bboxColor = glm::vec3(1.0f, 1.0f, 0.0f);
+        if (selectedModel == i) {
+            stageModels[i]->outlineEnabled = true;
+        } else {
+            stageModels[i]->outlineEnabled = false;
         }
-        wireShader.setVec3("wireframeColor", bboxColor);
-        wireShader.setMat4("model", modelBBoxes[i].GetCubeXform());
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        stageModels[i]->Draw(modelShader, outlineShader);
+
+        // wireShader.use();
+        // glBindVertexArray(cubeVAO); 
+        // glm::vec3 bboxColor = glm::vec3(1.0f, 0.0f, 0.0f);
+        // if (modelHoverStatus[i]) {
+        //     bboxColor = glm::vec3(1.0f, 1.0f, 0.0f);
+        // }
+        // wireShader.setVec3("wireframeColor", bboxColor);
+        // wireShader.setMat4("model", modelBBoxes[i].GetCubeXform());
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
     }
 
     if (moveGizmo.active) {

@@ -333,6 +333,7 @@ int main() {
     }
 
     Shader lightingShader("shaders/shader.vs", "shaders/shader.fs");
+    Shader outlineShader("shaders/outline.vs", "shaders/outline.fs");
     Shader lightCubeShader("shaders/shader.vs", "shaders/light.fs");
     Shader textShader("shaders/text_shader.vs", "shaders/text_shader.fs");
     Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
@@ -414,10 +415,10 @@ int main() {
 
     stage = new Stage();
     stage->init(&camera);
+    stage->AddModel(&park);
     stage->AddModel(&sword);
     stage->AddModel(&well);
     // stage->AddModel(&room);
-    stage->AddModel(&park);
     debugMenu.Setup(stage, &(camera.Position));
 
     kbdMgr.registerKeyboard(&kbd);
@@ -586,6 +587,10 @@ int main() {
         wireframeShader.setMat4("projection", projection);
         wireframeShader.setMat4("view", view);
 
+        outlineShader.use();
+        outlineShader.setMat4("projection", projection);
+        outlineShader.setMat4("view", view);
+
         // render the loaded model
         // model = glm::mat4(1.0f);
         // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
@@ -632,7 +637,7 @@ int main() {
 
         // Draw all models and bboxes on the stage
         // Need to make sure this is done before we unbind the textures
-        stage->Draw(lightingShader, wireframeShader);
+        stage->Draw(lightingShader, wireframeShader, outlineShader);
 
         // This draws all our AABB boxes
         // for (int i=0; i < cubeMap.size(); i++) {

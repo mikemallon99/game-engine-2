@@ -38,6 +38,7 @@ public:
     bool gammaCorrection;
     glm::vec3 origin;
     glm::vec3 scale;
+    bool outlineEnabled = false;
 
     AABB bboxCache;
     bool bboxCacheSet = false;
@@ -51,10 +52,42 @@ public:
     }
 
     // draws the model, and thus all its meshes
-    void Draw(Shader &shader)
+    void Draw(Shader &shader, Shader& outlineShader)
     {
+        if (outlineEnabled) {
+            // Stencil stuff (for object outline)
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);  
+            glClear(GL_STENCIL_BUFFER_BIT); 
+            glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments should pass the stencil test
+            glStencilMask(0xFF); // enable writing to the stencil buffer
+        }
+        // Draw everything regular
+        shader.use();
+        shader.setMat4("model", this->GetModelMatrix());
         for(unsigned int i = 0; i < meshes.size(); i++)
             meshes[i].Draw(shader);
+
+        if (outlineEnabled) {
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00); // disable writing to the stencil buffer
+            glDisable(GL_DEPTH_TEST);
+
+            // Slightly scale up the thang
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, origin);
+            // model = glm::scale(model, scale*1.1f);
+            model = glm::scale(model, scale);
+            outlineShader.use();
+            outlineShader.setMat4("model", model);
+            for(unsigned int i = 0; i < meshes.size(); i++)
+                meshes[i].Draw(outlineShader);
+            
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);   
+            glDisable(GL_STENCIL_TEST);
+            glEnable(GL_DEPTH_TEST);  
+        }
     }
 
     AABB GetBoundingBox() {
