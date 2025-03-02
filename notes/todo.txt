@@ -140,3 +140,103 @@ next directions to take:
     - serialize the stage to a file
         - USD?
 - swap out bbox selection with object orange outline
+
+components of battle system:
+- need a GUI to select the gag
+- need an XP system for getting points
+- animations for attacking
+- player gag inventory
+- health system
+- damage system, accuracy
+- different states for each type of gag
+    - throw/squirt = medium/high acc single damage
+    - sound = area damage
+    - lure = stun + double damage
+    - trap = damage only if lured
+    - drop = low accuracy single damage
+    - toonup = not needed since this is single player
+- levels of gags for each track
+- grid selection system 
+- way to walk up to an NPC to initiate a battle
+
+where does battle data get tracked?
+- as a test we could get away with tracking everything in one spot
+- player health (only ever one player)
+- enemy health (there are many possible enemies)
+- current gags
+- current level of gag, XP level
+
+on any given frame, there might be a battle active
+a battle is a state machine that goes back and forth between the players and the cogs
+
+battle
+- run loop updates battle
+    - battle updates based off state machine
+- render loop draws battle if its active
+- battle controller
+    - player can select a gag with mouse
+
+
+game engine:
+- run loop
+    - process inputs
+    - update game logic (first half)
+    - draw calls (second half)
+
+current architecture:
+- lots of global variables in the program & variables that are local to the run loop
+    globals:
+        - logger
+        - stage
+        - debug menu
+        - debounced keyboard mgr
+        - camera
+    locals:
+        - shaders
+        - models
+        - light cube VBO/VAO/positions
+        - texture IDs
+        - animator + animation for model
+        - collision objects
+- game logic update loop:
+    - controller update stuff
+        - keyboard debounce manager update
+        - set player move direction, calc move vector based off camera
+        - enable/disable flashlight
+        - fart sound/logging
+        - player jumping
+        - debug menu controller update
+            - go up/down on menu
+            - select item or go back
+            - inc/dec value
+        - stage controller update
+            - activate/deactivate move gizmo + model outline based on mouse click
+            - set move gizmo selection, set translate xform
+    - calculate player move vector 
+        - cams move vector
+        - gravity move vector
+        - update move vector based on collisions
+    - check if player is hitting the floor, cancel y velocity if so
+    - play sound if the player moves
+    - update NPC animation 
+    - update stage
+        - see if player is hovering over any models
+        - see if player is hovering / moving gizmo
+- callback functions
+    - mouse & scroll callbacks for moving camera
+
+
+how to handle inputs? should we use MVC framework?
+- model updates every frame
+- controller sets values in a state machine that the model reads on every update
+- view is the renderer that runs every frame based off the model
+
+
+other stuff to implement:
+- doors that take you to new areas
+- billboard items to get health
+- on screen log that can easily be written to
+    - scrolls just like a chat log
+    - log.output(string)
+
+

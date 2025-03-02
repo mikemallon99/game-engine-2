@@ -2,6 +2,7 @@
 #define TEXT_H
 
 #include "shader.h"
+#include "texture.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H  
@@ -16,11 +17,105 @@ struct Character {
 };
 
 std::map<char, Character> Characters;
+unsigned int bubbleTexID;
+
+void RenderTextBubble(Shader &textShader, Shader &bubbleShader, std::string text, float scale, glm::vec3 color)
+{
+    // Calculate size of the bubble
+    std::string::const_iterator c;
+    float x = 0.0f;
+    float y = 0.0f;
+    float x_max, y_max;
+    for (c = text.begin(); c != text.end(); c++)
+    {
+        Character ch = Characters[*c];
+
+        float xpos = x + ch.Bearing.x * scale;
+        float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+        float w = ch.Size.x * scale;
+        float h = ch.Size.y * scale;
+
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+        x_max = xpos+w;
+        y_max = ypos+h;
+    }
+
+    // TODO: render the big quad behind them with the bubble
+    float x_offset = 0.1f;
+    float y_offset = 0.1f;
+    float verticesBox[6][4] = {
+        { -x_max/2 - x_offset,     y_max/2 + y_offset,   0.0f, 0.0f },            
+        { -x_max/2 - x_offset,     -y_max/2 - y_offset,       0.0f, 1.0f },
+        { x_max/2 + x_offset, -y_max/2 - y_offset,       1.0f, 1.0f },
+
+        { -x_max/2 - x_offset,     y_max/2 + y_offset,   0.0f, 0.0f },
+        { x_max/2 + x_offset, -y_max/2 - y_offset,       1.0f, 1.0f },
+        { x_max/2 + x_offset, y_max/2 + y_offset,   1.0f, 0.0f }           
+    };
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(VAO_text);
+    // render glyph texture over quad
+    glBindTexture(GL_TEXTURE_2D, bubbleTexID);
+    // update content of VBO memory
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_text);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verticesBox), verticesBox); 
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // render quad
+    bubbleShader.use();
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    // Render all the text
+    // activate corresponding render state	
+    textShader.use();
+    glUniform3f(glGetUniformLocation(textShader.ID, "textColor"), color.x, color.y, color.z);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(VAO_text);
+
+    x = 0.0f;
+    y = 0.0f;
+    for (c = text.begin(); c != text.end(); c++)
+    {
+        Character ch = Characters[*c];
+
+        float xpos = x + ch.Bearing.x * scale;
+        float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+        float w = ch.Size.x * scale;
+        float h = ch.Size.y * scale;
+        // update VBO for each character
+        float vertices[6][4] = {
+            { xpos - x_max/2,     ypos + h - y_max/2,   0.0f, 0.0f },            
+            { xpos - x_max/2,     ypos - y_max/2,       0.0f, 1.0f },
+            { xpos + w - x_max/2, ypos - y_max/2,       1.0f, 1.0f },
+
+            { xpos - x_max/2,     ypos + h - y_max/2,   0.0f, 0.0f },
+            { xpos + w - x_max/2, ypos - y_max/2,       1.0f, 1.0f },
+            { xpos + w - x_max/2, ypos + h - y_max/2,   1.0f, 0.0f }           
+        };
+        // render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_text);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+    }
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
 
 void RenderText(Shader &s, std::string text, float x, float y, float scale, glm::vec3 color)
 {
     // activate corresponding render state	
     s.use();
+    s.setMat4("model", glm::mat4(1.0f));
+    s.setMat4("view", glm::mat4(1.0f));
     glUniform3f(glGetUniformLocation(s.ID, "textColor"), color.x, color.y, color.z);
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(VAO_text);
@@ -135,7 +230,19 @@ int loadTextStuff() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);      
 
+    bubbleTexID = loadTexture("textures/speechbubble.png");
+
     return 0;
+}
+
+int calcMaxYHeight() {
+    int maxHeight = 0;
+    for (int c=0; c < Characters.size(); c++) {
+        if (Characters[c].Size.y > maxHeight) {
+            maxHeight = Characters[c].Size.y;
+        }
+    }
+    return maxHeight;
 }
 
 #endif 

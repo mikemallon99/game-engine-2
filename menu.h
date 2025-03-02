@@ -182,7 +182,7 @@ public:
     }
 
     void Draw(Shader s) {
-        glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        glm::mat4 projection = glm::ortho(0.0f, float(SCREEN_WIDTH), 0.0f, float(SCREEN_HEIGHT));
         s.use();
         s.setMat4("projection", projection);
 
@@ -192,7 +192,7 @@ public:
         if (menuType == FACE_VECTOR_VIEW) {
             // Do this differently since the children dont exist
             for (int i=0; i < faceVectorPtr->size(); i++) {
-                y_pos = 570.0f - i * 30.0f;
+                y_pos = SCREEN_HEIGHT - (i+1) * 30.0f;
                 color = (i == cursorPos) ? selColor : defaultColor;
                 std::ostringstream oss;
                 oss << "face" << i;
@@ -200,7 +200,7 @@ public:
             }
         } else {
             for (int i=0; i < children.size(); i++) {
-                y_pos = 570.0f - i * 30.0f;
+                y_pos = SCREEN_HEIGHT - (i+1) * 30.0f;
                 color = (i == cursorPos) ? selColor : defaultColor;
                 RenderText(s, children[i]->GetValue(), 20.0f, y_pos, 0.5f, color);
             }

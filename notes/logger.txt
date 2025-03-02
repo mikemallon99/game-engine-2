@@ -1,0 +1,46 @@
+How should the gui logger be organized into the game?
+- single global instance that can be accessed by importing the file
+
+How should the battle system work?
+- player walks up to enemy, triggers a battle
+- battles have 2 states
+    - player attacking
+    - enemy attacking
+- controller sees that player clicks position XY on screen
+    - calls gag select function
+    - run battle logic based off battle state
+- whether or not the player is in a battle is a part of the games state
+- maybe theres a big struct for the games state/players state that contains a bunch of relevant data
+    - title screen
+    - in a battle
+    - in a cutscene
+    - able to move first person
+    - current stage loaded
+
+
+battle can have 4 players, 4 cogs:
+- each player selects an attack, once the attacks are locked in then the battle sequence starts
+
+battle sequence:
+- iterate through each gag track from top to bottom
+    - each track might have its own sequence
+- execute track x
+    - list of gags from players directed at cogs
+- iterate through each cog and they execute attack x on player y
+
+
+prototype system
+- player struct that contains their gag inventory
+- game state machine 
+    - in battle
+    - in FPS
+- way to select gags
+    - should have something in controller
+- battle state machine
+    - player picking
+    - player attacking
+    - cog attacking
+
+
+XXXX
+....

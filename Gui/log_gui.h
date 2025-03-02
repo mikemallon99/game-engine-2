@@ -44,7 +44,11 @@ void Logger::Draw(Shader s) {
     std::vector<std::array<char, WIDTH>> big_buffer;
 
     // Declaring like this sets all values to 0 initially
-    for (int i=logHistory.size()-10; i < logHistory.size(); i++) {
+    int startIdx = logHistory.size()-10;
+    if (startIdx < 0) {
+        startIdx = 0;
+    }
+    for (int i=startIdx; i < logHistory.size(); i++) {
         std::string curString = logHistory[i];
         std::array<char, WIDTH> newBuffer = {};
         int curCol = 0;
@@ -66,7 +70,7 @@ void Logger::Draw(Shader s) {
     std::array<std::array<char, WIDTH>, HEIGHT> draw_buffer = {};
     // Grab HEIGHT num of rows from big buffer
     int bufferIdx = big_buffer.size()-1;
-    for (int i=HEIGHT; i >= 0; i--) {
+    for (int i=HEIGHT-1; i >= 0; i--) {
         if (bufferIdx < 0) {
             break;
         }
@@ -76,11 +80,20 @@ void Logger::Draw(Shader s) {
 
     // Now take all the chars from this draw buffer and draw them onto the screen
     // need font height
+    glm::mat4 projection = glm::ortho(0.0f, float(SCREEN_WIDTH), 0.0f, float(SCREEN_HEIGHT));
+    s.use();
+    s.setMat4("projection", projection);
+
     int maxYHeight = calcMaxYHeight();
-    int y_start = SCREEN_HEIGHT - maxYHeight * HEIGHT;
+    // int y_start = SCREEN_HEIGHT - maxYHeight * HEIGHT;
+    float spacer = maxYHeight / 2;
+    float margin = 20.0f;
+    float y_start = spacer * 10;
     for (int i=0; i < HEIGHT; i++) {
         // Need to convert buffer into string for output
         std::string outStr(draw_buffer[i].data());
-        RenderText(s, outStr, 0, y_start+i, 0.1f, glm::vec3(0.0f, 0.0f, 0.0f));
+        RenderText(s, outStr, margin, margin + y_start - i*spacer, 0.5f, glm::vec3(0.0f, 0.0f, 0.0f));
     }
 }
+
+Logger logGui;

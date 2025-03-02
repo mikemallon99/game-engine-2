@@ -113,3 +113,50 @@
 - need a way to load in a mesh with smoothed normals
 - different color outlines
 - outline on select
+
+2/10/25
+- made orange outline
+- skipped smooth normals 
+- outline on select
+- started on animations
+
+2/11/25
+- got first animation in
+
+2/12/25
+- made text bubble
+(for tomorrow)
+- need to fix shader depth stuff
+- dynamic text stuff
+
+2/13/25
+- fixed shader depth stuff
+- couldnt figure out how to implement billboarding
+(for tomorrow)
+- billboarding
+
+2/23/25
+- got billboarding working okay
+- story + gameplay planning
+
+2/24/25
+- more story & gameplay ideas
+(for tomorrow)
+- try to implement a RPG style battle system like in toontown
+
+2/25/25
+- started on implementing battle system
+- realized that I needed a log gui
+
+2/26/25
+- started on log gui
+(for tomorrow)
+- figure out RenderText() height width and scale values
+
+2/27/25
+- got log gui working to a degree
+- did lots of learning about opengl clip space stuff
+
+2/27/25
+- moved log gui to bottom left corner
+- did documentation stuff + architecture research

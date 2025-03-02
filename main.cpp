@@ -26,6 +26,11 @@
 #include "sound.h"
 #include "gizmo.h"
 #include "cube.h"
+#include "texture.h"
+
+#include "Animation/animator.h"
+#include "Gui/log_gui.h"
+#include "Battle/battle.h"
 
 
 // MOVE: used for text studd
@@ -50,6 +55,12 @@ float lastX = 400, lastY = 400;
 float fov = 45.0;
 float yaw, pitch;
 bool firstMouse = true;
+
+
+enum GameState {
+    FREEROAM,
+    BATTLE
+};
 
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -82,61 +93,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }  
-
-unsigned int loadTexture(char const * path)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height, nrComponents;
-    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        glBindTexture(GL_TEXTURE_2D, textureID);
-
-        GLenum format;
-        if (nrComponents == 1) {
-            format = GL_RED;
-            unsigned char* rgbData = new unsigned char[width * height * 3]; // Allocate RGB data
-
-            for (int i = 0; i < width * height; ++i) {
-                rgbData[i * 3 + 0] = data[i]; // Red
-                rgbData[i * 3 + 1] = data[i]; // Green
-                rgbData[i * 3 + 2] = data[i]; // Blue
-            }
-
-            // Use the new RGB data
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgbData);
-
-            // Free the RGB buffer
-            delete[] rgbData;
-        }
-        else if (nrComponents == 3) {
-            format = GL_RGB;
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        }
-        else if (nrComponents == 4) {
-            format = GL_RGBA;
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        }
-
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
-    }
-
-    return textureID;
-}
 
 unsigned int loadCubemap(vector<std::string> faces)
 {
@@ -210,6 +166,7 @@ void processInput(GLFWwindow *window)
     // play sound
     if (kbd.checkKey(GLFW_KEY_Q)) {
         soundMgr.play_sound(fartIdx);
+        logGui.Write("You have farted.");
     }
 
     // Physics
@@ -336,9 +293,11 @@ int main() {
     Shader outlineShader("shaders/outline.vs", "shaders/outline.fs");
     Shader lightCubeShader("shaders/shader.vs", "shaders/light.fs");
     Shader textShader("shaders/text_shader.vs", "shaders/text_shader.fs");
+    Shader textBubbleShader("shaders/textbubble.vs", "shaders/textbubble.fs");
     Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
     Shader wireframeShader("shaders/wireframe.vs", "shaders/wireframe.gs", "shaders/wireframe.fs");
     Shader crosshairShader("shaders/crosshair.vs", "shaders/crosshair.fs");
+    Shader animShader("shaders/animations.vs", "shaders/animations.fs");
     // Shader ourShader("model_loading.vs", "model_loading.fs");
 
     // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
@@ -394,7 +353,7 @@ int main() {
 
     Model well("models/well.obj");
     well.origin = glm::vec3(0.0f, 0.0f, 0.0f); 
-    well.scale = glm::vec3(0.5f, 0.5f, 0.5f);	
+    well.scale = glm::vec3(0.35f, 0.35f, 0.35f);	
 
     Model room("models/room.obj");
     room.origin = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -402,7 +361,15 @@ int main() {
 
     Model park("models/park.obj");
     park.origin = glm::vec3(0.0f, 0.0f, 0.0f);
-    park.scale = glm::vec3(0.5f, 0.5f, 0.5f);	
+    park.scale = glm::vec3(0.4f, 0.4f, 0.4f);	
+
+    // Animation model
+    Model animModel("resources/objects/bryce/bryce.dae");
+    animModel.origin = glm::vec3(2.0f, 0.0f, 0.0f);
+    // animModel.scale = glm::vec3(0.004f, 0.004f, 0.004f);	
+    animModel.scale = glm::vec3(0.4f, 0.4f, 0.4f);	
+    Animation danceAnimation("resources/objects/bryce/bryce.dae", &animModel);
+    Animator animator(&danceAnimation);
 
     // Model cubeModel("models/cube.obj");
     // park.model = glm::translate(park.model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
@@ -418,6 +385,7 @@ int main() {
     stage->AddModel(&park);
     stage->AddModel(&sword);
     stage->AddModel(&well);
+    // stage->AddModel(&animModel);
     // stage->AddModel(&room);
     debugMenu.Setup(stage, &(camera.Position));
 
@@ -434,6 +402,12 @@ int main() {
         "textures/skybox/back.jpg"
     };
     unsigned int cubemapTexture = loadCubemap(faces);  
+
+    logGui.Write("Starting up de logger.");
+
+    // Experiment with battle stuff
+    GameState gameState = BATTLE;
+    Battle battleSystem;
 
     float lastStepTime = glfwGetTime();
     while(!glfwWindowShouldClose(window))
@@ -497,6 +471,13 @@ int main() {
         if (currentFrame - lastStepTime > 0.5 && glm::length(newMovVec) > 0.025 && hitFloor) {
             soundMgr.play_sound(stepIdx);
             lastStepTime = currentFrame;
+        }
+
+        // Update animations
+        animator.UpdateAnimation(deltaTime);
+
+        if (gameState == BATTLE) {
+            battleSystem.Update();
         }
 
         stage->Update();
@@ -583,6 +564,17 @@ int main() {
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
 
+        // Do the same thing for the animation shader
+        animShader.use();
+        animShader.setMat4("projection", projection);
+        animShader.setMat4("view", view);
+
+        // Put bone xforms in the animation shader
+        auto transforms = animator.GetFinalBoneMatrices();
+		for (int i = 0; i < transforms.size(); ++i) {
+			animShader.setMat4("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+        }
+
         wireframeShader.use();
         wireframeShader.setMat4("projection", projection);
         wireframeShader.setMat4("view", view);
@@ -638,6 +630,12 @@ int main() {
         // Draw all models and bboxes on the stage
         // Need to make sure this is done before we unbind the textures
         stage->Draw(lightingShader, wireframeShader, outlineShader);
+
+        // Draw 3d animated guy
+        animShader.use();
+        animModel.Draw(animShader, outlineShader);
+        // lightingShader.use();
+        // animModel.Draw(lightingShader, outlineShader);
 
         // This draws all our AABB boxes
         // for (int i=0; i < cubeMap.size(); i++) {
@@ -703,7 +701,59 @@ int main() {
         glDepthMask(GL_TRUE);
         glEnable(GL_DEPTH_TEST);
 
+        // Text bubble
+        textShader.use();
+        textShader.setMat4("projection", projection);
+        textShader.setMat4("view", view);
+        // Compute direction from quad to camera in the XZ plane
+        glm::vec3 direction = glm::normalize(glm::vec3(camera.Position.x - animModel.origin.x, 0.0f, camera.Position.z - animModel.origin.z));
+        glm::vec3 perp = glm::normalize(glm::cross(direction, glm::vec3(0.0f, 1.0f, 0.0f)));
+        glm::vec3 chatboxOrigin = animModel.origin - 0.5f * perp;
+        direction = glm::normalize(glm::vec3(camera.Position.x - chatboxOrigin.x, 0.0f, camera.Position.z - chatboxOrigin.z));
+
+        // Compute the rotation angle around Y-axis
+        float angle = atan2(direction.x, direction.z);
+        glm::mat4 textModel = glm::mat4(1.0f);
+        // textModel = glm::translate(textModel, glm::vec3(0.5f, 1.7f, -0.5f));
+        // textModel = glm::translate(textModel, glm::vec3(0.0f, 2.0f, 0.0f));
+        textModel = glm::translate(textModel, chatboxOrigin);
+        textModel = glm::rotate(textModel, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotate around Y-axis
+        textModel = glm::translate(textModel, glm::vec3(0.0f, 0.6f, 0.0f));
+        textModel = glm::scale(textModel, glm::vec3(0.3f, 0.3f, 0.3f));
+        textShader.setMat4("model", textModel);
+        textBubbleShader.use();
+        textBubbleShader.setMat4("projection", projection);
+        textBubbleShader.setMat4("view", view);
+        textBubbleShader.setMat4("model", textModel);
+        RenderTextBubble(textShader, textBubbleShader, "Whats up dude?", 0.005f, glm::vec3(0.0f, 0.0f, 0.0f));
+        
+        // Name bubble
+        textShader.use();
+        textShader.setMat4("projection", projection);
+        textShader.setMat4("view", view);
+        // Compute direction from quad to camera in the XZ plane
+        chatboxOrigin = animModel.origin;
+        direction = glm::normalize(glm::vec3(camera.Position.x - chatboxOrigin.x, 0.0f, camera.Position.z - chatboxOrigin.z));
+
+        // Compute the rotation angle around Y-axis
+        angle = atan2(direction.x, direction.z);
+        textModel = glm::mat4(1.0f);
+        // textModel = glm::translate(textModel, glm::vec3(0.5f, 1.7f, -0.5f));
+        // textModel = glm::translate(textModel, glm::vec3(0.0f, 2.0f, 0.0f));
+        textModel = glm::translate(textModel, chatboxOrigin);
+        textModel = glm::rotate(textModel, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotate around Y-axis
+        textModel = glm::translate(textModel, glm::vec3(0.0f, 0.75f, 0.0f));
+        textModel = glm::scale(textModel, glm::vec3(0.15f, 0.15f, 0.15f));
+        textShader.setMat4("model", textModel);
+        textBubbleShader.use();
+        textBubbleShader.setMat4("projection", projection);
+        textBubbleShader.setMat4("view", view);
+        textBubbleShader.setMat4("model", textModel);
+        RenderTextBubble(textShader, textBubbleShader, "Brodie", 0.005f, glm::vec3(0.0f, 0.0f, 0.0f));
+
         debugMenu.Draw(textShader);
+
+        logGui.Draw(textShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    

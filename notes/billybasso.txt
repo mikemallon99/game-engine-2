@@ -1,0 +1,53 @@
+learning from billy basso:
+- first something episodes of handmade hero are a good resource for hand made game programming
+- allocate big block of memory at the start of the game, deallocate at the end. prevents crashes
+    - can do this instead of RAII
+- solving certain problems forces a structure, forcing a structure makes it easier to think about
+- global state, game state, screen state
+- took 7 years, he was able to keep it up cause his mind was always thinking about the game. it was automatic for him
+- did handmade cause it was more interesting to him than using unity
+- hotreloading was the biggest win he felt like
+    - compile game into DLLs, then have base game reload DLLs once theyre updated
+- using C style programming with mostly just structs felt like a big dub for him too
+- high level overview
+    - global state (everything needed for full lifetime)
+    - game state (related to gameplay)
+    - sceen state (just for screen youre in)
+    - renderer stuff
+        - hotreloading for shaders
+        - can mess with ordering of draw pipeline
+- he wishes he did certain stuff like
+    - have a config file for game settings
+    - strings file for localization stuff
+    - (the way i see it, he wouldnt have known to do that stuff beforehand. much better that he just built the game)
+- graphics
+    - used DX11 + nintendo graphics API
+    - then implemented Playstation API instead of vulkan
+    - interesting that he wanted to implement the API's rather than vulkan
+        - seems to make for an interesting problem about abstracting your game logic to use 4 different graphics APIs
+    - says it was "fun" to read through the graphics docs too see how things were implemented on different consoles
+- process for building game
+    - would make a crappy version of thing first and then redo it
+        - for sound, used windows api xaudio2
+        - did 3 different versions of audio stuff
+    - for his new game, he will just start with the latest version. cause he understands the problem + solutions now
+    - skeptical of ppl telling him "this is the way to do it"
+    - likes to just do trial and error, allow himself to make mistakes
+        - wasnt solving problems until it confronted him as an issue
+        - eg: just kept the whole game in one file game.cpp for a while
+- Entities
+    - each entity is an arbitrary struct
+    - game update loop just called update function on every entity
+    - macro trick
+        - define macro to mean something like: update entity of type x
+        - macro will call hardcoded function name like: update_rabbit(entity)
+        - another spot of the code, there will be a draw_rabbit(entity)
+        - not totally sure what hes talking about lol
+
+
+my biggest problems to solve:
+- Its starting to get difficult to get the ball rolling every morning on writing code
+    - billy says his code is burnt into his memory. mine definitely is not
+- Indecisiveness on how to implement a feature because things are so open ended
+    - idea i had on my walk earlier is to make myself finish a crappy version of my feature before moving to the next one
+    - the motivator here is that I get rly excited about the next feature, so Ill be motivated to finish feature A just cause i wanna get it done so then I can start on feature B
